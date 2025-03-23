@@ -24,9 +24,8 @@ namespace Microsoft.Xna.Framework.Input
         private static MouseState PlatformGetState(GameWindow window)
         {
             int x, y;
-            var winFlags = Sdl.Window.GetWindowFlags(window.Handle);
             var state = Sdl.Mouse.GetGlobalState(out x, out y);
-            var clientBounds = window.ClientBounds;
+            var clientBounds = window.Position;
 
             window.MouseState.LeftButton = (state & Sdl.Mouse.Button.Left) != 0 ? ButtonState.Pressed : ButtonState.Released;
             window.MouseState.MiddleButton = (state & Sdl.Mouse.Button.Middle) != 0 ? ButtonState.Pressed : ButtonState.Released;

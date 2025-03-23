@@ -936,6 +936,21 @@ namespace Microsoft.Xna.Framework.Graphics
             return multisampleDesc;
         }
 
+        private void PlatformClearColor(Vector4 color)
+        {
+            lock (_d3dContext)
+            {
+                // Clear the diffuse render buffer.
+                int count = _currentRenderTargets.Length;
+                for (int i = 0; i < count; i++)
+                {
+                    RenderTargetView view = _currentRenderTargets[i];
+                    if (view != null)
+                        _d3dContext.ClearRenderTargetView(view, new RawColor4(color.X, color.Y, color.Z, color.W));
+                }
+            }
+        }
+
         private void PlatformClear(ClearOptions options, Vector4 color, float depth, int stencil)
         {
             // Clear options for depth/stencil buffer if not attached.

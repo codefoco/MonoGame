@@ -13,16 +13,70 @@ internal static class Sdl
 {
     public static IntPtr NativeLibrary = GetNativeLibrary();
 
+#if LINUX_GLES
+
+    private static string LibraryPrefixPath
+    {
+        get
+        {
+            if (CurrentPlatform.IsARM64)
+                return "/lib/aarch64-linux-gnu/";
+            if (Environment.Is64BitProcess)
+                return "/lib/x86_64-linux-gnu/";
+
+            return "/lib/x86-linux-gnu/";
+        }
+    }
+
+    private static IntPtr TrySystemSDL()
+    {
+        // Some devices have old versions of SDL
+        // on libSDL2-2.0.so.0, so we explicitly check
+        // for newer versions
+        string[] sdlVersions = {
+            "libSDL2-2.0.so.0.3000.10",
+            "libSDL2-2.0.so.0.3000.7",
+            "libSDL2-2.0.so.0.3000.3",
+            "libSDL2-2.0.so.0.2800.2",
+            "libSDL2-2.0.so.0.2600.5",
+            "libSDL2-2.0.so.0.2600.2",
+            "libSDL2-2.0.so.0.18.2",
+            "libSDL2-2.0.so.0.16.0",
+            "libSDL2-2.0.so.0.14.1",
+            "libSDL2-2.0.so.0.10.0",
+            "libSDL2-2.0.so.0"
+        };
+
+        string prefix = LibraryPrefixPath;
+
+        foreach(string version in sdlVersions)
+        {
+            string path = prefix + version;
+            if (!File.Exists(path))
+                continue;
+
+            return FuncLoader.LoadLibrary(path);
+        }
+
+        return IntPtr.Zero;
+    }
+#endif
+
     private static IntPtr GetNativeLibrary()
     {
+#if LINUX_GLES
+        // We first try installed SDL
+        IntPtr lib = TrySystemSDL();
+        if (lib != IntPtr.Zero)
+            return lib;
+#endif
         if (CurrentPlatform.OS == OS.Windows)
             return FuncLoader.LoadLibraryExt("SDL2.dll");
-        else if (CurrentPlatform.OS == OS.Linux)
+        if (CurrentPlatform.OS == OS.Linux)
             return FuncLoader.LoadLibraryExt("libSDL2-2.0.so.0");
-        else if (CurrentPlatform.OS == OS.MacOSX)
+        if (CurrentPlatform.OS == OS.MacOSX)
             return FuncLoader.LoadLibraryExt("libSDL2.dylib");
-        else
-            return FuncLoader.LoadLibraryExt("sdl2");
+        return FuncLoader.LoadLibraryExt("sdl2");
     }
 
     public static Version CurrentVersion;
@@ -101,6 +155,21 @@ internal static class Sdl
         AddEvent = 0x0,
         PeekEvent = 0x1,
         GetEvent = 0x2,
+    }
+
+    public enum GameControllerBindType
+    {
+        None,
+        Button,
+        Axis,
+        Hat
+    }
+
+    public struct GameControllerButtonBind
+    {
+        public GameControllerBindType bindType;
+        public int value;
+        public int hat;
     }
 
     [StructLayout(LayoutKind.Explicit, Size = 56)]
@@ -429,11 +498,6 @@ internal static class Sdl
         private delegate int d_sdl_getwindowdisplayindex(IntPtr window);
         private static d_sdl_getwindowdisplayindex SDL_GetWindowDisplayIndex = FuncLoader.LoadFunction<d_sdl_getwindowdisplayindex>(NativeLibrary, "SDL_GetWindowDisplayIndex");
 
-        public static int GetDisplayIndex(IntPtr window)
-        {
-            return GetError(SDL_GetWindowDisplayIndex(window));
-        }
-
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate int d_sdl_getwindowflags(IntPtr window);
         public static d_sdl_getwindowflags GetWindowFlags = FuncLoader.LoadFunction<d_sdl_getwindowflags>(NativeLibrary, "SDL_GetWindowFlags");
@@ -578,6 +642,9 @@ internal static class Sdl
 
         public static int GetWindowDisplayIndex(IntPtr window)
         {
+            if (window == IntPtr.Zero)
+                return 0;
+
             return GetError(SDL_GetWindowDisplayIndex(window));
         }
 
@@ -616,10 +683,34 @@ internal static class Sdl
             ContextMinorVersion,
             ContextEgl,
             ContextFlags,
-            ContextProfileMAsl,
+            ContextProfileMask,
             ShareWithCurrentContext,
             FramebufferSRGBCapable,
             ContextReleaseBehaviour,
+            ContextResetNotification,
+            ContextNoError,
+            FloatBuffers,
+        }
+
+        /// <summary>
+        /// SDL_GLprofile.
+        /// </summary>
+        public enum Profile
+        {
+            /// <summary>
+            /// SDL_GL_CONTEXT_PROFILE_CORE
+            /// </summary>
+            Core = 0x0001,
+
+            /// <summary>
+            /// SDL_GL_CONTEXT_PROFILE_CORE
+            /// </summary>
+            Compatibility = 0x0002,
+
+            /// <summary>
+            /// SDL_GL_CONTEXT_PROFILE_CORE
+            /// </summary>
+            ES = 0x0004
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -1027,11 +1118,19 @@ internal static class Sdl
         public static d_sdl_gamecontrolleraddmappingsfromrw AddMappingFromRw = FuncLoader.LoadFunction<d_sdl_gamecontrolleraddmappingsfromrw>(NativeLibrary, "SDL_GameControllerAddMappingsFromRW");
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool d_sdl_gamecontrollerhasbutton(IntPtr gamecontroller, Button button);
+        public delegate GameControllerButtonBind d_sdl_gamecontrollergetbindforbutton(IntPtr gamecontroller, Button button);
+        public static d_sdl_gamecontrollergetbindforbutton GetBindForButton = FuncLoader.LoadFunction<d_sdl_gamecontrollergetbindforbutton>(NativeLibrary, "SDL_GameControllerGetBindForButton");
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate GameControllerButtonBind d_sdl_gamecontrollergetbindforaxis(IntPtr gamecontroller, Axis axis);
+        public static d_sdl_gamecontrollergetbindforaxis GetBindForAxis = FuncLoader.LoadFunction<d_sdl_gamecontrollergetbindforaxis>(NativeLibrary, "SDL_GameControllerGetBindForAxis");
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate int d_sdl_gamecontrollerhasbutton(IntPtr gamecontroller, Button button);
         public static d_sdl_gamecontrollerhasbutton HasButton = FuncLoader.LoadFunction<d_sdl_gamecontrollerhasbutton>(NativeLibrary, "SDL_GameControllerHasButton");
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool d_sdl_gamecontrollerhasaxis(IntPtr gamecontroller, Axis axis);
+        public delegate int d_sdl_gamecontrollerhasaxis(IntPtr gamecontroller, Axis axis);
         public static d_sdl_gamecontrollerhasaxis HasAxis = FuncLoader.LoadFunction<d_sdl_gamecontrollerhasaxis>(NativeLibrary, "SDL_GameControllerHasAxis");
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

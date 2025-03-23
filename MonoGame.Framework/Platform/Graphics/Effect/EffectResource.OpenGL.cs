@@ -6,7 +6,7 @@ namespace Microsoft.Xna.Framework.Graphics
 {
     internal partial class EffectResource
     {
-#if (ANDROID || IOS)
+#if (GLES)
         const string AlphaTestEffectName = "Microsoft.Xna.Framework.Platform.Graphics.Effect.Resources.AlphaTestEffect.ogles.mgfxo";
         const string BasicEffectName = "Microsoft.Xna.Framework.Platform.Graphics.Effect.Resources.BasicEffect.ogles.mgfxo";
         const string DualTextureEffectName = "Microsoft.Xna.Framework.Platform.Graphics.Effect.Resources.DualTextureEffect.ogles.mgfxo";

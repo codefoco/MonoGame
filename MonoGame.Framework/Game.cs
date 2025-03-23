@@ -437,11 +437,19 @@ namespace Microsoft.Xna.Framework
         }
 
         /// <summary>
-        /// Supress calling <see cref="Draw"/> in the game loop.
+        /// Suppress calling <see cref="Draw"/> in the game loop.
         /// </summary>
         public void SuppressDraw()
         {
             _suppressDraw = true;
+        }
+
+        /// <summary>
+        /// Re-enable draw
+        /// </summary>
+        public void EnableDraw()
+        {
+            _suppressDraw = false;
         }
         
         /// <summary>
@@ -681,9 +689,7 @@ namespace Microsoft.Xna.Framework
             }
 
             // Draw unless the update suppressed it.
-            if (_suppressDraw)
-                _suppressDraw = false;
-            else
+            if (!_suppressDraw)
             {
                 DoDraw(_gameTime);
             }

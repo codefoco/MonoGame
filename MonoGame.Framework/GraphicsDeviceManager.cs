@@ -113,6 +113,7 @@ namespace Microsoft.Xna.Framework
             try
             {
                 var gdi = DoPreparingDeviceSettings();
+                var displayMode = gdi.Adapter.CurrentDisplayMode;
 
                 if (!_initialized)
                     Initialize(gdi);
@@ -292,7 +293,7 @@ namespace Microsoft.Xna.Framework
 
         partial void PlatformPreparePresentationParameters(PresentationParameters presentationParameters);
 
-        private void PreparePresentationParameters(PresentationParameters presentationParameters)
+        private void PreparePresentationParameters(PresentationParameters presentationParameters, DisplayMode displayMode)
         {
             presentationParameters.BackBufferFormat = _preferredBackBufferFormat;
 
@@ -313,6 +314,11 @@ namespace Microsoft.Xna.Framework
             presentationParameters.BackBufferWidth = _preferredBackBufferWidth;
             presentationParameters.BackBufferHeight = _preferredBackBufferHeight;
 #endif
+            
+            if (presentationParameters.BackBufferWidth > displayMode.Width)
+                presentationParameters.BackBufferWidth = displayMode.Width;
+            if (presentationParameters.BackBufferHeight > displayMode.Height)
+                presentationParameters.BackBufferHeight = displayMode.Height;
 
             presentationParameters.DepthStencilFormat = _preferredDepthStencilFormat;
             presentationParameters.IsFullScreen = _wantFullScreen;
@@ -343,7 +349,7 @@ namespace Microsoft.Xna.Framework
             gdi.Adapter = GraphicsAdapter.DefaultAdapter;
             gdi.GraphicsProfile = GraphicsProfile;
             var pp = new PresentationParameters();
-            PreparePresentationParameters(pp);
+            PreparePresentationParameters(pp, gdi.Adapter.CurrentDisplayMode);
             gdi.PresentationParameters = pp;
         }
 

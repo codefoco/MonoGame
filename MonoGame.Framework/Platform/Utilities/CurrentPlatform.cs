@@ -86,6 +86,7 @@ namespace MonoGame.Framework.Utilities
         {
             get
             {
+                Init();
                 return _isARM64;
             }
         }
@@ -157,6 +158,8 @@ namespace MonoGame.Framework.Utilities
         {
             get
             {
+                Init();
+
                 if (CurrentPlatform.OS == OS.Windows)
                 {
                     if (CurrentPlatform.IsARM64)

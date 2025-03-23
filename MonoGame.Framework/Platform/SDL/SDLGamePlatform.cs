@@ -74,7 +74,7 @@ namespace Microsoft.Xna.Framework
 
         internal override void OnPresentationChanged(PresentationParameters pp)
         {
-            var displayIndex = Sdl.Window.GetDisplayIndex(Window.Handle);
+            var displayIndex = Sdl.Display.GetWindowDisplayIndex(Window.Handle);
             var displayName = Sdl.Display.GetDisplayName(displayIndex);
             BeginScreenDeviceChange(pp.IsFullScreen);
             EndScreenDeviceChange(displayName, pp.BackBufferWidth, pp.BackBufferHeight);
@@ -230,6 +230,13 @@ namespace Microsoft.Xna.Framework
                             case Sdl.Window.EventId.Moved:
                                 _view.Moved();
                                 break;
+                            case Sdl.Window.EventId.Minimized:
+                                _game.SuppressDraw();
+                                break;
+                            case Sdl.Window.EventId.Restored:
+                            case Sdl.Window.EventId.Maximized:
+                                _game.EnableDraw();
+                                break;
                             case Sdl.Window.EventId.Close:
                                 _isExiting++;
                                 break;
@@ -285,6 +292,13 @@ namespace Microsoft.Xna.Framework
                             DeviceType device = GetTouchDevice(ev.Touch.TouchId);
                             float pressure = ev.Touch.pressure;
                             TouchPanel.AddEvent(id, TouchLocationState.Released, position, device, pressure, 0f);
+                        }
+                        break;
+                    case Sdl.EventType.MouseMotion:
+                        if (_view._mouseVisiblePending)
+                        {
+                            Sdl.Mouse.ShowCursor(1);
+                            _view._mouseVisiblePending = false;
                         }
                         break;
                 }

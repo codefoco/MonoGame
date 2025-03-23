@@ -11,6 +11,14 @@ namespace Microsoft.Xna.Framework
     {
         partial void PlatformInitialize(PresentationParameters presentationParameters)
         {
+#if LINUX_GLES
+            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextProfileMask, (int)Sdl.GL.Profile.ES);
+            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMajorVersion, 2);
+            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMinorVersion, 0);
+#else // LINUX_GLES
+            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMajorVersion, 2);
+            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMinorVersion, 1);
+#endif
             var surfaceFormat = _game.graphicsDeviceManager.PreferredBackBufferFormat.GetColorFormat();
             var depthStencilFormat = _game.graphicsDeviceManager.PreferredDepthStencilFormat;
 
@@ -41,8 +49,6 @@ namespace Microsoft.Xna.Framework
             }
 
             Sdl.GL.SetAttribute(Sdl.GL.Attribute.DoubleBuffer, 1);
-            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMajorVersion, 2);
-            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMinorVersion, 1);
 
             if (presentationParameters.MultiSampleCount > 0)
             {
@@ -53,12 +59,13 @@ namespace Microsoft.Xna.Framework
             int clientWidth = presentationParameters.BackBufferWidth;
             int clientHeight = presentationParameters.BackBufferHeight;
 
-            SdlGameWindow window = (SdlGameWindow)SdlGameWindow.Instance;
-
             bool fullScreen = presentationParameters.IsFullScreen;
             bool hardwareFullScreen = presentationParameters.HardwareModeSwitch;
 
+            SdlGameWindow window = (SdlGameWindow)SdlGameWindow.Instance;
             window.CreateWindow(clientWidth, clientHeight, fullScreen, hardwareFullScreen);
+
+            presentationParameters.DeviceWindowHandle = window.Handle;
         }
     }
 }

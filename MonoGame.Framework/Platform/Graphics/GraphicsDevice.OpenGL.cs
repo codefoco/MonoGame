@@ -266,7 +266,6 @@ namespace Microsoft.Xna.Framework.Graphics
                 Context = GL.CreateContext(windowInfo);
             }
 
-            Context.MakeCurrent(windowInfo);
             Context.SwapInterval = PresentationParameters.PresentationInterval.GetSwapInterval();
 
             Context.MakeCurrent(windowInfo);
@@ -295,7 +294,7 @@ namespace Microsoft.Xna.Framework.Graphics
                 string version = GL.GetString(StringName.Version);
 
                 if (string.IsNullOrEmpty(version))
-                    throw new NoSuitableGraphicsDeviceException("Unable to retrieve OpenGL version");
+                    throw new NoSuitableGraphicsDeviceException("Unable to retrieve OpenGL ES version");
 
                 string[] versionSplit = version.Split(' ');
                 if (versionSplit.Length > 2 && versionSplit[0].Equals("OpenGL") && versionSplit[1].Equals("ES"))
@@ -316,7 +315,7 @@ namespace Microsoft.Xna.Framework.Graphics
                 glMinorVersion = 1;
             }
 #else
-                try
+            try
             {
                 string version = GL.GetString(StringName.Version);
 
@@ -444,6 +443,31 @@ namespace Microsoft.Xna.Framework.Graphics
 		    ScissorRectangle = prevScissorRect;
 		    DepthStencilState = prevDepthStencilState;
 		    BlendState = prevBlendState;
+        }
+
+        private void PlatformClearColor(Vector4 color)
+        {
+            BlendState prevBlendState = BlendState;
+
+            BlendState = BlendState.Opaque;
+
+            if (color != _lastClearColor)
+            {
+                GL.ClearColor(color.X, color.Y, color.Z, color.W);
+                _lastClearColor = color;
+            }
+
+#if MONOMAC || IOS
+            if (GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt) == FramebufferErrorCode.FramebufferComplete)
+            {
+#endif
+            GL.Clear(ClearBufferMask.ColorBufferBit);
+#if MONOMAC || IOS
+            }
+#endif
+
+            // Restore the previous render state.
+            BlendState = prevBlendState;
         }
 
         private void PlatformDispose()

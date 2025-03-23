@@ -32,7 +32,8 @@ namespace Microsoft.Xna.Framework
             get
             {
                 int x = 0, y = 0;
-                Sdl.Window.GetPosition(Handle, out x, out y);
+                if (_handle != IntPtr.Zero)
+                    Sdl.Window.GetPosition(Handle, out x, out y);
                 return new Rectangle(x, y, _width, _height);
             }
         }
@@ -43,7 +44,7 @@ namespace Microsoft.Xna.Framework
             {
                 int x = 0, y = 0;
 
-                if (!IsFullScreen)
+                if (!IsFullScreen && _handle != IntPtr.Zero)
                     Sdl.Window.GetPosition(Handle, out x, out y);
 
                 return new Point(x, y);
@@ -102,7 +103,7 @@ namespace Microsoft.Xna.Framework
             if (CurrentPlatform.OS == OS.MacOSX)
                 return GetDeviceDPIFromDrawableSize(out dpi);
 
-            int displayIndex = Sdl.Window.GetDisplayIndex(Handle);
+            int displayIndex = Sdl.Display.GetWindowDisplayIndex(Handle);
             if (Sdl.Display.GetDisplayDPI(displayIndex, out ddpi, out hdpi, out vdpi) < 0)
             {
                 dpi = 0f;
@@ -134,6 +135,7 @@ namespace Microsoft.Xna.Framework
         private string _screenDeviceName;
         private int _width, _height;
         private bool _wasMoved, _supressMoved;
+        internal bool _mouseVisiblePending;
 
         public SdlGameWindow(Game game)
         {
@@ -170,21 +172,23 @@ namespace Microsoft.Xna.Framework
                 }
             }
 
-            int width  = GraphicsDeviceManager.DefaultBackBufferWidth;
-            int height = GraphicsDeviceManager.DefaultBackBufferHeight;
-
-            _handle = Sdl.Window.Create("", 0, 0,
-                width,
-                height,
+#if !LINUX_GLES
+            // On Desktop we create a invisible window where the actual window will be created
+            // because some SDL APIs require display index, and to get display index we need a window handle
+            // When we create the actual game window this temp window will be destroyed
+            _handle = Sdl.Window.Create("", Sdl.Window.PosCentered, Sdl.Window.PosCentered,
+                _width,
+                _height,
                 Sdl.Window.State.Hidden |
-                Sdl.Window.State.FullscreenDesktop |
                 Sdl.Window.State.AllowHighDPI);
+#endif
         }
 
         internal void CreateWindow(int width, int heigh, bool fullScreen, bool hardwareFullScreen)
         {
             var initflags =
                 Sdl.Window.State.OpenGL |
+                Sdl.Window.State.Shown |
                 Sdl.Window.State.InputFocus |
                 Sdl.Window.State.MouseFocus |
                 Sdl.Window.State.AllowHighDPI |
@@ -221,8 +225,11 @@ namespace Microsoft.Xna.Framework
                     initflags |= Sdl.Window.State.FullscreenDesktop;
             }
 
-            _handle = Sdl.Window.Create(
-                Title == null ? AssemblyHelper.GetDefaultWindowTitle() : Title,
+            string title = Title;
+            if (string.IsNullOrEmpty(title))
+                title = AssemblyHelper.GetDefaultWindowTitle();
+
+            _handle = Sdl.Window.Create(title,
                 winx, winy, _width, _height, initflags
             );
 
@@ -265,8 +272,19 @@ namespace Microsoft.Xna.Framework
 
         public void SetCursorVisible(bool visible)
         {
+            if (visible == _mouseVisible)
+                return;
+
             _mouseVisible = visible;
-            Sdl.Mouse.ShowCursor(visible ? 1 : 0);
+
+            if (!visible)
+            {
+                Sdl.Mouse.ShowCursor(0);
+            }
+            else
+            {
+                _mouseVisiblePending = true;
+            }
         }
 
         public override void BeginScreenDeviceChange(bool willBeFullScreen)
@@ -279,7 +297,7 @@ namespace Microsoft.Xna.Framework
             _screenDeviceName = screenDeviceName;
 
             var prevBounds = ClientBounds;
-            var displayIndex = Sdl.Window.GetDisplayIndex(Handle);
+            var displayIndex = Sdl.Display.GetWindowDisplayIndex(Handle);
 
             Sdl.Rectangle displayRect;
             Sdl.Display.GetBounds(displayIndex, out displayRect);

@@ -1,14 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net46;net8.0;net9.0</TargetFrameworks>
-    <DefineConstants>OPENGL;OPENAL;XNADESIGNPROVIDED;DESKTOPGL</DefineConstants>
+    <TargetFrameworks>net46</TargetFrameworks>
+    <DefineConstants>OPENGL;OPENAL;XNADESIGNPROVIDED;DESKTOPGL;GLES;LINUX_GLES</DefineConstants>
+    <MGOpenGL>GLES</MGOpenGL>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible Condition=" '$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net9.0'">true</IsAotCompatible>
     <IsTrimmable Condition=" '$(TargetFramework)' == 'net8.0' or '$(TargetFramework)' == 'net9.0'">true</IsTrimmable>
-    <Description>The MonoGame runtime supporting Windows, Linux and macOS using SDL2 and OpenGL.</Description>
+    <Description>The MonoGame runtime supporting Linux using SDL2 and OpenGL ES.</Description>
     <PackageTags>monogame;.net core;core;.net standard;standard;desktopgl</PackageTags>
-    <PackageId>MonoGame.Framework.DesktopGL</PackageId>
+    <PackageId>MonoGame.Framework.LinuxGLES</PackageId>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DebugType>portable</DebugType>
     <LangVersion>7.2</LangVersion>
@@ -27,6 +28,7 @@
     <Compile Remove="obj\**\*" />
     <Compile Remove="Platform\**\*" />
     <Compile Remove="Properties\**\*" />
+    <Compile Remove="Graphics\OcclusionQuery.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,7 +36,6 @@
     <None Remove="MonoGame.Framework.DesktopGL.Mac.targets" />
     <None Remove="MonoGame.Framework.Android.targets" />
     <None Remove="MonoGame.Framework.DesktopGL.targets" />
-    <None Remove="MonoGame.Framework.LinuxGLES.targets" />
   </ItemGroup>
 
   <ItemGroup>
@@ -118,50 +119,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\ThirdParty\Dependencies\openal-soft\Windows\x86\soft_oal.dll">
-      <Link>x86\soft_oal.dll</Link>
-      <PackagePath>runtimes\win-x86\native</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\ThirdParty\Dependencies\SDL\Windows\x86\SDL2.dll">
-      <Link>x86\SDL2.dll</Link>
-      <PackagePath>runtimes\win-x86\native</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="..\ThirdParty\Dependencies\openal-soft\Windows\x64\soft_oal.dll">
-      <Link>x64\soft_oal.dll</Link>
-      <PackagePath>runtimes\win-x64\native</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\ThirdParty\Dependencies\SDL\Windows\x64\SDL2.dll">
-      <Link>x64\SDL2.dll</Link>
-      <PackagePath>runtimes\win-x64\native</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="..\ThirdParty\Dependencies\openal-soft\Windows\x86\soft_oal.dll">
-      <Link>x86\soft_oal.dll</Link>
-      <PackagePath>runtimes\win-x86\native</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\ThirdParty\Dependencies\SDL\Windows\x86\SDL2.dll">
-      <Link>x86\SDL2.dll</Link>
-      <PackagePath>runtimes\win-x86\native</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <None Include="..\ThirdParty\Dependencies\openal-soft\Windows\ARM64\soft_oal.dll">
-      <Link>ARM64\soft_oal.dll</Link>
-      <PackagePath>runtimes\win-arm64\native</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\ThirdParty\Dependencies\SDL\Windows\ARM64\SDL2.dll">
-      <Link>ARM64\SDL2.dll</Link>
-      <PackagePath>runtimes\win-arm64\native</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
     <None Include="..\ThirdParty\Dependencies\openal-soft\Linux\x64\libopenal.so.1">
       <Link>x64\libopenal.so.1</Link>
       <PackagePath>runtimes\linux-x64\native</PackagePath>
@@ -183,19 +140,7 @@
       <PackagePath>runtimes\linux-arm64\native</PackagePath>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-
-    <None Include="..\ThirdParty\Dependencies\openal-soft\MacOS\Universal\libopenal.1.dylib">
-      <Link>libopenal.1.dylib</Link>
-      <PackagePath>runtimes\osx\native</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\ThirdParty\Dependencies\SDL\MacOS\Universal\libSDL2.dylib">
-      <Link>libSDL2.dylib</Link>
-      <PackagePath>runtimes\osx\native</PackagePath>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-
-    <Content Include="MonoGame.Framework.DesktopGL.targets" PackagePath="build" />
+    <Content Include="MonoGame.Framework.LinuxGLES.targets" PackagePath="build" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
@@ -204,7 +149,7 @@
     </PackageReference>
   </ItemGroup>
   <Import Project="Platform\OpenGL.targets" />
-  <Import Project="Platform\OpenGL.EmbeddedShaders.targets" />
+  <Import Project="Platform\OpenGLES.EmbeddedShaders.targets" />
   <Import Project="Platform\OpenAL.targets" />
   <Import Project="MonoGame.Sign.targets" />
 </Project>
