@@ -39,6 +39,8 @@ namespace MonoGame.Effect.Compiler
             var proc = new Process();
             proc.StartInfo.FileName = "wine64";
             proc.StartInfo.Arguments = "dotnet ";
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.CreateNoWindow = true;
             proc.StartInfo.AddPathArgument(assemblyLocation);
             proc.StartInfo.AddPathArgument(input);
             proc.StartInfo.AddPathArgument(output);
