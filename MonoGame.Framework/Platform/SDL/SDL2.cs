@@ -13,19 +13,73 @@ internal static class Sdl
 {
     public static IntPtr NativeLibrary = GetNativeLibrary();
 
-    private static IntPtr GetNativeLibrary()
+#if LINUX_GLES
+
+    private static string LibraryPrefixPath
     {
-        if (CurrentPlatform.OS == OS.Windows)
-            return FuncLoader.LoadLibraryExt("SDL2.dll");
-        else if (CurrentPlatform.OS == OS.Linux)
-            return FuncLoader.LoadLibraryExt("libSDL2-2.0.so.0");
-        else if (CurrentPlatform.OS == OS.MacOSX)
-            return FuncLoader.LoadLibraryExt("libSDL2.dylib");
-        else
-            return FuncLoader.LoadLibraryExt("sdl2");
+        get
+        {
+            if (CurrentPlatform.IsARM64)
+                return "/lib/aarch64-linux-gnu/";
+            if (Environment.Is64BitProcess)
+                return "/lib/x86_64-linux-gnu/";
+
+            return "/lib/x86-linux-gnu/";
+        }
     }
 
-    public static Version version;
+    private static IntPtr TrySystemSDL()
+    {
+        // Some devices have old versions of SDL
+        // on libSDL2-2.0.so.0, so we explicitly check
+        // for newer versions
+        string[] sdlVersions = {
+            "libSDL2-2.0.so.0.3000.10",
+            "libSDL2-2.0.so.0.3000.7",
+            "libSDL2-2.0.so.0.3000.3",
+            "libSDL2-2.0.so.0.2800.2",
+            "libSDL2-2.0.so.0.2600.5",
+            "libSDL2-2.0.so.0.2600.2",
+            "libSDL2-2.0.so.0.18.2",
+            "libSDL2-2.0.so.0.16.0",
+            "libSDL2-2.0.so.0.14.1",
+            "libSDL2-2.0.so.0.10.0",
+            "libSDL2-2.0.so.0"
+        };
+
+        string prefix = LibraryPrefixPath;
+
+        foreach(string version in sdlVersions)
+        {
+            string path = prefix + version;
+            if (!File.Exists(path))
+                continue;
+
+            return FuncLoader.LoadLibrary(path);
+        }
+
+        return IntPtr.Zero;
+    }
+#endif
+
+    private static IntPtr GetNativeLibrary()
+    {
+#if LINUX_GLES
+        // We first try installed SDL
+        IntPtr lib = TrySystemSDL();
+        if (lib != IntPtr.Zero)
+            return lib;
+#endif
+        if (CurrentPlatform.OS == OS.Windows)
+            return FuncLoader.LoadLibraryExt("SDL2.dll");
+        if (CurrentPlatform.OS == OS.Linux)
+            return FuncLoader.LoadLibraryExt("libSDL2-2.0.so.0");
+        if (CurrentPlatform.OS == OS.MacOSX)
+            return FuncLoader.LoadLibraryExt("libSDL2.dylib");
+        return FuncLoader.LoadLibraryExt("sdl2");
+    }
+
+    public static Version CurrentVersion;
 
     [Flags]
     public enum InitFlags
@@ -52,7 +106,7 @@ internal static class Sdl
 
         MouseMotion = 0x400,
         MouseButtonDown = 0x401,
-        MouseButtonup = 0x402,
+        MouseButtonUp = 0x402,
         MouseWheel = 0x403,
 
         JoyAxisMotion = 0x600,
@@ -103,6 +157,21 @@ internal static class Sdl
         GetEvent = 0x2,
     }
 
+    public enum GameControllerBindType
+    {
+        None,
+        Button,
+        Axis,
+        Hat
+    }
+
+    public struct GameControllerButtonBind
+    {
+        public GameControllerBindType bindType;
+        public int value;
+        public int hat;
+    }
+
     [StructLayout(LayoutKind.Explicit, Size = 56)]
     public struct Event
     {
@@ -115,9 +184,13 @@ internal static class Sdl
         [FieldOffset(0)]
         public Mouse.MotionEvent Motion;
         [FieldOffset(0)]
+        public Mouse.MouseButtonEvent MouseButton;
+        [FieldOffset(0)]
         public Keyboard.TextEditingEvent Edit;
         [FieldOffset(0)]
         public Keyboard.TextInputEvent Text;
+        [FieldOffset(0)]
+        public Touch.TouchFingerEvent Touch;
         [FieldOffset(0)]
         public Mouse.WheelEvent Wheel;
         [FieldOffset(0)]
@@ -138,6 +211,9 @@ internal static class Sdl
 
     public struct Version
     {
+        public static readonly Sdl.Version Sdl205Version = new Sdl.Version() { Major = 2, Minor = 0, Patch = 5 };
+        public static readonly Sdl.Version Sdl204Version = new Sdl.Version() { Major = 2, Minor = 0, Patch = 4 };
+
         public byte Major;
         public byte Minor;
         public byte Patch;
@@ -165,19 +241,7 @@ internal static class Sdl
             if (!(obj is Version))
                 return false;
 
-            return version == (Version)obj;
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                int hash = 17;
-                hash = hash * 23 + Major.GetHashCode();
-                hash = hash * 23 + Minor.GetHashCode();
-                hash = hash * 23 + Patch.GetHashCode();
-                return hash;
-            }
+            return CurrentVersion == (Version)obj;
         }
 
         public static bool operator !=(Version version1, Version version2)
@@ -206,12 +270,21 @@ internal static class Sdl
             // SDL switched formats from 2.0.x to 2.x.y (with y being optional)
             if (version.Major == 2 && version.Minor == 0 && version.Patch < 23)
             {
-                return version.Major * 1_000_000 + version.Patch * 1000;
+                return version.Major * 1000000 + version.Patch * 1000;
             }
             else
             {
-                return version.Major * 1_000_000 + version.Minor * 1000 + version.Patch;
+                return version.Major * 1000000 + version.Minor * 1000 + version.Patch;
             }
+        }
+
+        public override int GetHashCode()
+        {
+            int hashCode = -639545495;
+            hashCode = hashCode * -1521134295 + Major.GetHashCode();
+            hashCode = hashCode * -1521134295 + Minor.GetHashCode();
+            hashCode = hashCode * -1521134295 + Patch.GetHashCode();
+            return hashCode;
         }
     }
 
@@ -425,11 +498,6 @@ internal static class Sdl
         private delegate int d_sdl_getwindowdisplayindex(IntPtr window);
         private static d_sdl_getwindowdisplayindex SDL_GetWindowDisplayIndex = FuncLoader.LoadFunction<d_sdl_getwindowdisplayindex>(NativeLibrary, "SDL_GetWindowDisplayIndex");
 
-        public static int GetDisplayIndex(IntPtr window)
-        {
-            return GetError(SDL_GetWindowDisplayIndex(window));
-        }
-
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate int d_sdl_getwindowflags(IntPtr window);
         public static d_sdl_getwindowflags GetWindowFlags = FuncLoader.LoadFunction<d_sdl_getwindowflags>(NativeLibrary, "SDL_GetWindowFlags");
@@ -574,7 +642,19 @@ internal static class Sdl
 
         public static int GetWindowDisplayIndex(IntPtr window)
         {
+            if (window == IntPtr.Zero)
+                return 0;
+
             return GetError(SDL_GetWindowDisplayIndex(window));
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate int d_sdl_getdisplaydpi(int displayIndex, out float ddpi, out float hdpi, out float vdpi);
+        private static d_sdl_getdisplaydpi SDL_GetDisplayDPI = FuncLoader.LoadFunction<d_sdl_getdisplaydpi>(NativeLibrary, "SDL_GetDisplayDPI");
+
+        public static int GetDisplayDPI(int displayIndex, out float ddpi, out float hdpi, out float vdpi)
+        {
+            return GetError(SDL_GetDisplayDPI(displayIndex, out ddpi, out hdpi, out vdpi));
         }
     }
 
@@ -603,10 +683,34 @@ internal static class Sdl
             ContextMinorVersion,
             ContextEgl,
             ContextFlags,
-            ContextProfileMAsl,
+            ContextProfileMask,
             ShareWithCurrentContext,
             FramebufferSRGBCapable,
             ContextReleaseBehaviour,
+            ContextResetNotification,
+            ContextNoError,
+            FloatBuffers,
+        }
+
+        /// <summary>
+        /// SDL_GLprofile.
+        /// </summary>
+        public enum Profile
+        {
+            /// <summary>
+            /// SDL_GL_CONTEXT_PROFILE_CORE
+            /// </summary>
+            Core = 0x0001,
+
+            /// <summary>
+            /// SDL_GL_CONTEXT_PROFILE_CORE
+            /// </summary>
+            Compatibility = 0x0002,
+
+            /// <summary>
+            /// SDL_GL_CONTEXT_PROFILE_CORE
+            /// </summary>
+            ES = 0x0004
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -642,6 +746,10 @@ internal static class Sdl
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate int d_sdl_gl_makecurrent(IntPtr window, IntPtr context);
         public static d_sdl_gl_makecurrent MakeCurrent = FuncLoader.LoadFunction<d_sdl_gl_makecurrent>(NativeLibrary, "SDL_GL_MakeCurrent");
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void sdl_gl_getdrawablesize(IntPtr window, out int width, out int height);
+        public static sdl_gl_getdrawablesize GetDrawableSize = FuncLoader.LoadFunction<sdl_gl_getdrawablesize>(NativeLibrary, "SDL_GL_GetDrawableSize");
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate int d_sdl_gl_setattribute(Attribute attr, int value);
@@ -704,6 +812,21 @@ internal static class Sdl
             public int Y;
             public int Xrel;
             public int Yrel;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MouseButtonEvent
+        {
+            public EventType Type;
+            public uint Timestamp;
+            public uint WindowID;
+            public uint Which;
+            public byte Button;
+            public byte State;
+            public byte Clicks;
+            private byte padding1;
+            public int X;
+            public int Y;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -995,11 +1118,19 @@ internal static class Sdl
         public static d_sdl_gamecontrolleraddmappingsfromrw AddMappingFromRw = FuncLoader.LoadFunction<d_sdl_gamecontrolleraddmappingsfromrw>(NativeLibrary, "SDL_GameControllerAddMappingsFromRW");
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool d_sdl_gamecontrollerhasbutton(IntPtr gamecontroller, Button button);
+        public delegate GameControllerButtonBind d_sdl_gamecontrollergetbindforbutton(IntPtr gamecontroller, Button button);
+        public static d_sdl_gamecontrollergetbindforbutton GetBindForButton = FuncLoader.LoadFunction<d_sdl_gamecontrollergetbindforbutton>(NativeLibrary, "SDL_GameControllerGetBindForButton");
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate GameControllerButtonBind d_sdl_gamecontrollergetbindforaxis(IntPtr gamecontroller, Axis axis);
+        public static d_sdl_gamecontrollergetbindforaxis GetBindForAxis = FuncLoader.LoadFunction<d_sdl_gamecontrollergetbindforaxis>(NativeLibrary, "SDL_GameControllerGetBindForAxis");
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate int d_sdl_gamecontrollerhasbutton(IntPtr gamecontroller, Button button);
         public static d_sdl_gamecontrollerhasbutton HasButton = FuncLoader.LoadFunction<d_sdl_gamecontrollerhasbutton>(NativeLibrary, "SDL_GameControllerHasButton");
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        public delegate bool d_sdl_gamecontrollerhasaxis(IntPtr gamecontroller, Axis axis);
+        public delegate int d_sdl_gamecontrollerhasaxis(IntPtr gamecontroller, Axis axis);
         public static d_sdl_gamecontrollerhasaxis HasAxis = FuncLoader.LoadFunction<d_sdl_gamecontrollerhasaxis>(NativeLibrary, "SDL_GameControllerHasAxis");
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -1214,5 +1345,63 @@ internal static class Sdl
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public unsafe delegate void d_sdl_free(IntPtr ptr);
         public static d_sdl_free SDL_Free = FuncLoader.LoadFunction<d_sdl_free>(NativeLibrary, "SDL_free");
+    }
+
+    public static class Touch
+    {
+        [StructLayout(LayoutKind.Sequential)]
+        public struct TouchFingerEvent
+        {
+            public EventType Type;
+            public uint TimeStamp;
+            public long TouchId;
+            public long TouchFingerId;
+            public float X;
+            public float Y;
+            public float dx;
+            public float dy;
+            public float pressure;
+            public uint WindowId;
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate int d_sdl_getnultouchdevices();
+        private static d_sdl_getnultouchdevices SDL_GetNumTouchDevices = FuncLoader.LoadFunction<d_sdl_getnultouchdevices>(NativeLibrary, "SDL_GetNumTouchDevices");
+
+        public static int GetNumTouchDevices()
+        {
+            return SDL_GetNumTouchDevices();
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate IntPtr d_sdl_gettouchname(int index);
+        private static d_sdl_gettouchname SDL_GetTouchName = FuncLoader.LoadFunction<d_sdl_gettouchname>(NativeLibrary, "SDL_GetTouchName");
+
+        public static string GetTouchName(int index)
+        {
+            return InteropHelpers.Utf8ToString(SDL_GetTouchName(index));
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate long d_sdl_gettouchdevice(int index);
+        private static d_sdl_gettouchdevice SDL_GetTouchDevice = FuncLoader.LoadFunction<d_sdl_gettouchdevice>(NativeLibrary, "SDL_GetTouchDevice");
+
+        public static long GetTouchDevice(int index)
+        {
+            return SDL_GetTouchDevice(index);
+        }
+
+        public static int GetTouchIndex(long touchId)
+        {
+            int total = GetNumTouchDevices();
+            for (int i = 0; i < total; i++)
+            {
+                long id = GetTouchDevice(i);
+                if (id == touchId)
+                    return i;
+            }
+
+            return -1;
+        }
     }
 }
