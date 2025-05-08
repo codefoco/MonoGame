@@ -537,7 +537,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				glType = PixelType.UnsignedShort565;
 				break;
 			case SurfaceFormat.Bgra4444:
-#if IOS || ANDROID
+#if IOS || ANDROID || GLES
 				glInternalFormat = PixelInternalFormat.Rgba;
 #else
 				glInternalFormat = PixelInternalFormat.Rgba4;
@@ -597,7 +597,7 @@ namespace Microsoft.Xna.Framework.Graphics
                 glInternalFormat = PixelInternalFormat.CompressedSrgbAlphaS3tcDxt5Ext;
                 glFormat = (PixelFormat)GLPixelFormat.CompressedTextureFormats;
                 break;
-#if !IOS && !ANDROID && !ANGLE
+#if !IOS && !ANDROID && !ANGLE && !GLES
             case SurfaceFormat.Rgba1010102:
                 glInternalFormat = PixelInternalFormat.Rgb10A2ui;
                 glFormat = PixelFormat.Rgba;

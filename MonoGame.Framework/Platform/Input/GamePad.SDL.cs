@@ -119,31 +119,77 @@ namespace Microsoft.Xna.Framework.Input
             caps.IsConnected = true;
             caps.DisplayName = Sdl.GameController.GetName(gamecontroller);
             caps.Identifier = Sdl.Joystick.GetGUID(Sdl.GameController.GetJoystick(gamecontroller)).ToString();
-            caps.HasLeftVibrationMotor = caps.HasRightVibrationMotor = Sdl.GameController.HasRumble(gamecontroller) != 0;
+            caps.HasLeftVibrationMotor = caps.HasRightVibrationMotor = HasRumble(gamecontroller);
             caps.GamePadType = GamePadType.GamePad;
-            caps.HasAButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.A);
-            caps.HasBButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.B);
-            caps.HasXButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.X);
-            caps.HasYButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.Y);
-            caps.HasBackButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.Back);
-            caps.HasBigButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.Guide);
-            caps.HasStartButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.Start);
-            caps.HasDPadLeftButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.DpadLeft);
-            caps.HasDPadDownButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.DpadDown);
-            caps.HasDPadRightButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.DpadRight);
-            caps.HasDPadUpButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.DpadUp);
-            caps.HasLeftShoulderButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.LeftShoulder);
-            caps.HasLeftTrigger = Sdl.GameController.HasAxis(gamecontroller, Sdl.GameController.Axis.TriggerLeft);
-            caps.HasRightShoulderButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.RightShoulder);
-            caps.HasRightTrigger = Sdl.GameController.HasAxis(gamecontroller, Sdl.GameController.Axis.TriggerRight);
-            caps.HasLeftStickButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.LeftStick);
-            caps.HasRightStickButton = Sdl.GameController.HasButton(gamecontroller, Sdl.GameController.Button.RightStick);
-            caps.HasLeftXThumbStick = Sdl.GameController.HasAxis(gamecontroller, Sdl.GameController.Axis.LeftX);
-            caps.HasLeftYThumbStick = Sdl.GameController.HasAxis(gamecontroller, Sdl.GameController.Axis.LeftY);
-            caps.HasRightXThumbStick = Sdl.GameController.HasAxis(gamecontroller, Sdl.GameController.Axis.RightX);
-            caps.HasRightYThumbStick = Sdl.GameController.HasAxis(gamecontroller, Sdl.GameController.Axis.RightY);
+            caps.HasAButton = HasButton(gamecontroller, Sdl.GameController.Button.A);
+            caps.HasBButton = HasButton(gamecontroller, Sdl.GameController.Button.B);
+            caps.HasXButton = HasButton(gamecontroller, Sdl.GameController.Button.X);
+            caps.HasYButton = HasButton(gamecontroller, Sdl.GameController.Button.Y);
+            caps.HasBackButton = HasButton(gamecontroller, Sdl.GameController.Button.Back);
+            caps.HasBigButton = HasButton(gamecontroller, Sdl.GameController.Button.Guide);
+            caps.HasStartButton = HasButton(gamecontroller, Sdl.GameController.Button.Start);
+            caps.HasDPadLeftButton = HasButton(gamecontroller, Sdl.GameController.Button.DpadLeft);
+            caps.HasDPadDownButton = HasButton(gamecontroller, Sdl.GameController.Button.DpadDown);
+            caps.HasDPadRightButton = HasButton(gamecontroller, Sdl.GameController.Button.DpadRight);
+            caps.HasDPadUpButton = HasButton(gamecontroller, Sdl.GameController.Button.DpadUp);
+            caps.HasLeftShoulderButton = HasButton(gamecontroller, Sdl.GameController.Button.LeftShoulder);
+            caps.HasLeftTrigger = HasAxis(gamecontroller, Sdl.GameController.Axis.TriggerLeft);
+            caps.HasRightShoulderButton = HasButton(gamecontroller, Sdl.GameController.Button.RightShoulder);
+            caps.HasRightTrigger = HasAxis(gamecontroller, Sdl.GameController.Axis.TriggerRight);
+            caps.HasLeftStickButton = HasButton(gamecontroller, Sdl.GameController.Button.LeftStick);
+            caps.HasRightStickButton = HasButton(gamecontroller, Sdl.GameController.Button.RightStick);
+            caps.HasLeftXThumbStick = HasAxis(gamecontroller, Sdl.GameController.Axis.LeftX);
+            caps.HasLeftYThumbStick = HasAxis(gamecontroller, Sdl.GameController.Axis.LeftY);
+            caps.HasRightXThumbStick = HasAxis(gamecontroller, Sdl.GameController.Axis.RightX);
+            caps.HasRightYThumbStick = HasAxis(gamecontroller, Sdl.GameController.Axis.RightY);
 
             return caps;
+        }
+
+        private static bool HasRumble(IntPtr gamecontroller)
+        {
+            if (Sdl.GameController.HasRumble == null)
+                return false;
+
+            return Sdl.GameController.HasRumble(gamecontroller) != 0;
+        }
+
+        private static bool HasButton(IntPtr gamecontroller, Sdl.GameController.Button button)
+        {
+            if (Sdl.GameController.HasButton != null)
+                return Sdl.GameController.HasButton(gamecontroller, button) != 0;
+
+            if (Sdl.GameController.GetBindForButton != null)
+            {
+                Sdl.GameControllerButtonBind bind = Sdl.GameController.GetBindForButton(gamecontroller, button);
+                return bind.bindType != Sdl.GameControllerBindType.None;
+            }
+            // No binding assume we only have ABXY dpad and LT, RT
+            return button == Sdl.GameController.Button.A ||
+                   button == Sdl.GameController.Button.B ||
+                   button == Sdl.GameController.Button.X ||
+                   button == Sdl.GameController.Button.Y ||
+                   button == Sdl.GameController.Button.DpadUp ||
+                   button == Sdl.GameController.Button.DpadDown ||
+                   button == Sdl.GameController.Button.DpadLeft ||
+                   button == Sdl.GameController.Button.DpadRight ||
+                   button == Sdl.GameController.Button.LeftShoulder ||
+                   button == Sdl.GameController.Button.RightShoulder ||
+                   button == Sdl.GameController.Button.Start;
+        }
+
+        private static bool HasAxis(IntPtr gamecontroller, Sdl.GameController.Axis axis)
+        {
+            if (Sdl.GameController.HasAxis != null)
+                return Sdl.GameController.HasAxis(gamecontroller, axis) != 0;
+
+            if (Sdl.GameController.GetBindForButton != null)
+            {
+                Sdl.GameControllerButtonBind bind = Sdl.GameController.GetBindForAxis(gamecontroller, axis);
+                return bind.bindType != Sdl.GameControllerBindType.None;
+            }
+
+            return false;
         }
 
         private static float GetFromSdlAxis(int axis)
