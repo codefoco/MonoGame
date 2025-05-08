@@ -192,6 +192,17 @@ namespace Microsoft.Xna.Framework.Graphics
             private set;
         }
 
+        /// <summary>
+        /// Get graphics version and description
+        /// </summary>
+        public string VersionDescription
+        {
+            get
+            {
+                return PlatformGetVersionDescription();
+            }
+        }
+
         internal GraphicsMetrics _graphicsMetrics;
 
         /// <summary>
@@ -279,21 +290,6 @@ namespace Microsoft.Xna.Framework.Graphics
 
         private void Setup()
         {
-#if DEBUG
-            if (DisplayMode == null)
-            {
-                throw new Exception(
-                    "Unable to determine the current display mode.  This can indicate that the " +
-                    "game is not configured to be HiDPI aware under Windows 10 or later.  See " +
-                    "https://github.com/MonoGame/MonoGame/issues/5040 for more information.");
-            }
-#endif
-
-            // Initialize the main viewport
-            _viewport = new Viewport (0, 0,
-			                         DisplayMode.Width, DisplayMode.Height);
-			_viewport.MaxDepth = 1.0f;
-
             PlatformSetup();
 
             VertexTextures = new TextureCollection(this, MaxVertexTextureSlots, true);
@@ -553,6 +549,20 @@ namespace Microsoft.Xna.Framework.Graphics
             }
         }
 
+        /// <summary>
+        /// Clear render target with given color (doesn't clear depth or stencil buffer)
+        /// </summary>
+        /// <param name="color">Color.</param>
+        public void ClearColor(Color color)
+        {
+            PlatformClearColor(color.ToVector4());
+
+            unchecked
+            {
+                _graphicsMetrics._clearCount++;
+            }
+        }
+
         public void Clear(ClearOptions options, Color color, float depth, int stencil)
         {
             PlatformClear(options, color.ToVector4(), depth, stencil);
@@ -746,6 +756,9 @@ namespace Microsoft.Xna.Framework.Graphics
 
             set
             {
+                if (_viewport == value)
+                    return;
+
                 _viewport = value;
                 PlatformSetViewport(ref value);
             }
@@ -857,6 +870,22 @@ namespace Microsoft.Xna.Framework.Graphics
             }
         }
 
+        /// <summary>
+        /// Resets the viewport to the default size
+        /// </summary>
+        public void ResetDefaultViewport()
+        {
+            int renderTargetWidth;
+            int renderTargetHeight;
+            int yoffset;
+
+            PlatformGetDefaultRenderTargetSize(out renderTargetWidth, out renderTargetHeight, out yoffset);
+
+            // Set the viewport to the size of the first render target.
+            Viewport = new Viewport(0, yoffset, renderTargetWidth, renderTargetHeight);
+        }
+
+
         internal void ApplyRenderTargets(RenderTargetBinding[] renderTargets)
         {
             var clearTarget = false;
@@ -868,6 +897,8 @@ namespace Microsoft.Xna.Framework.Graphics
 
             int renderTargetWidth;
             int renderTargetHeight;
+            int yoffset;
+
             if (renderTargets == null)
             {
                 _currentRenderTargetCount = 0;
@@ -875,8 +906,7 @@ namespace Microsoft.Xna.Framework.Graphics
                 PlatformApplyDefaultRenderTarget();
                 clearTarget = PresentationParameters.RenderTargetUsage == RenderTargetUsage.DiscardContents;
 
-                renderTargetWidth = PresentationParameters.BackBufferWidth;
-                renderTargetHeight = PresentationParameters.BackBufferHeight;
+                PlatformGetDefaultRenderTargetSize(out renderTargetWidth, out renderTargetHeight, out yoffset);
             }
 			else
 			{
@@ -891,10 +921,12 @@ namespace Microsoft.Xna.Framework.Graphics
 
                 renderTargetWidth = renderTarget.Width;
                 renderTargetHeight = renderTarget.Height;
+                yoffset = 0;
             }
 
             // Set the viewport to the size of the first render target.
-            Viewport = new Viewport(0, 0, renderTargetWidth, renderTargetHeight);
+            _viewport = new Viewport(0, yoffset, renderTargetWidth, renderTargetHeight);
+            PlatformSetViewport(ref _viewport);
 
             // Set the scissor rectangle to the size of the first render target.
             ScissorRectangle = new Rectangle(0, 0, renderTargetWidth, renderTargetHeight);

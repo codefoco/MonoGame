@@ -24,6 +24,7 @@ namespace Microsoft.Xna.Framework.Audio
         private float _reverbMix;
 
         private bool _paused;
+        private bool _loop;
 
         private void PlatformInitialize(byte[] buffer, int sampleRate, int channels)
         {
@@ -161,7 +162,7 @@ namespace Microsoft.Xna.Framework.Audio
             if (_voice != null && SoundEffect.MasterVoice != null)
             {
                 // Choose the correct buffer depending on if we are looped.            
-                var buffer = _isLooped ? _effect._loopedBuffer : _effect._buffer;
+                var buffer = _loop ? _effect._loopedBuffer : _effect._buffer;
 
                 if (_voice.State.BuffersQueued > 0)
                 {
@@ -181,7 +182,7 @@ namespace Microsoft.Xna.Framework.Audio
             if (_voice != null && SoundEffect.MasterVoice != null)
             {
                 // Restart the sound if (and only if) it stopped playing
-                if (!_isLooped)
+                if (!_loop)
                 {
                     if (_voice.State.BuffersQueued == 0)
                     {
@@ -206,7 +207,7 @@ namespace Microsoft.Xna.Framework.Audio
                 }
                 else
                 {
-                    if (_isLooped)
+                    if (_loop)
                         _voice.ExitLoop();
                     else
                         _voice.Stop((int)PlayFlags.Tails);
@@ -214,6 +215,16 @@ namespace Microsoft.Xna.Framework.Audio
             }
             
             _paused = false;
+        }
+
+        private void PlatformSetIsLooped(bool value)
+        {
+            _loop = value;
+        }
+
+        private bool PlatformGetIsLooped()
+        {
+            return _loop;
         }
 
         private void PlatformSetPan(float value)
