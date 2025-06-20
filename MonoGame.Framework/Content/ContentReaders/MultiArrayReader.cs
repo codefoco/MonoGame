@@ -7,6 +7,14 @@ using MonoGame.Framework.Utilities;
 
 namespace Microsoft.Xna.Framework.Content
 {
+    /// <summary>
+    /// This type is not meant to be used directly by MonoGame users.
+    /// Its purpose is to allow to work-around AOT issues when loading assets with the ContentManager fail due to the absence of runtime-reflection support in that context (i.e. missing types due to trimming and inability to statically discover them at compile-time).
+    /// If ContentManager.Load() throws an NotSupportedExeception, the message should provide insights on how to fix it.
+    /// </summary>
+#if NET
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+#endif
     internal class MultiArrayReader<T> : ContentTypeReader<Array>
     {
         ContentTypeReader elementReader;
@@ -33,12 +41,13 @@ namespace Microsoft.Xna.Framework.Content
             for (int d = 0; d < dimensions.Length; d++)
                 count *= dimensions[d] = input.ReadInt32();
 
-
+#pragma warning disable IL3050
             var array = existingInstance;
             if (array == null)
                 array = Array.CreateInstance(typeof(T), dimensions);//new T[count];
             else if (dimensions.Length != array.Rank)
                 throw new RankException("existingInstance");
+#pragma warning restore IL3050
 
             var indices = new int[rank];
 

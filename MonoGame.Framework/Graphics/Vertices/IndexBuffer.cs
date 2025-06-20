@@ -15,56 +15,25 @@ namespace Microsoft.Xna.Framework.Graphics
         public int IndexCount { get; private set; }
         public IndexElementSize IndexElementSize { get; private set; }
 
-   		protected IndexBuffer(GraphicsDevice graphicsDevice, Type indexType, int indexCount, BufferUsage usage, bool dynamic)
-            : this(graphicsDevice, SizeForType(graphicsDevice, indexType), indexCount, usage, dynamic)
+        protected IndexBuffer(GraphicsDevice graphicsDevice, IndexElementSize indexElementSize, int indexCount, BufferUsage usage, bool dynamic)
         {
-        }
-
-		protected IndexBuffer(GraphicsDevice graphicsDevice, IndexElementSize indexElementSize, int indexCount, BufferUsage usage, bool dynamic)
-        {
-			if (graphicsDevice == null)
+            if (graphicsDevice == null)
             {
                 throw new ArgumentNullException("graphicsDevice", FrameworkResources.ResourceCreationWhenDeviceIsNull);
             }
-			this.GraphicsDevice = graphicsDevice;
-			this.IndexElementSize = indexElementSize;	
+            this.GraphicsDevice = graphicsDevice;
+            this.IndexElementSize = indexElementSize;
             this.IndexCount = indexCount;
             this.BufferUsage = usage;
-			
+
             _isDynamic = dynamic;
 
             PlatformConstruct(indexElementSize, indexCount);
-		}
+        }
 
-		public IndexBuffer(GraphicsDevice graphicsDevice, IndexElementSize indexElementSize, int indexCount, BufferUsage bufferUsage) :
-			this(graphicsDevice, indexElementSize, indexCount, bufferUsage, false)
-		{
-		}
-
-		public IndexBuffer(GraphicsDevice graphicsDevice, Type indexType, int indexCount, BufferUsage usage) :
-			this(graphicsDevice, SizeForType(graphicsDevice, indexType), indexCount, usage, false)
-		{
-		}
-
-        /// <summary>
-        /// Gets the relevant IndexElementSize enum value for the given type.
-        /// </summary>
-        /// <param name="graphicsDevice">The graphics device.</param>
-        /// <param name="type">The type to use for the index buffer</param>
-        /// <returns>The IndexElementSize enum value that matches the type</returns>
-        static IndexElementSize SizeForType(GraphicsDevice graphicsDevice, Type type)
+        public IndexBuffer(GraphicsDevice graphicsDevice, IndexElementSize indexElementSize, int indexCount, BufferUsage bufferUsage) :
+            this(graphicsDevice, indexElementSize, indexCount, bufferUsage, false)
         {
-            switch (ReflectionHelpers.ManagedSizeOf(type))
-            {
-                case 2:
-                    return IndexElementSize.SixteenBits;
-                case 4:
-                    if (graphicsDevice.GraphicsProfile == GraphicsProfile.Reach)
-                        throw new NotSupportedException("The profile does not support an elementSize of IndexElementSize.ThirtyTwoBits; use IndexElementSize.SixteenBits or a type that has a size of two bytes.");
-                    return IndexElementSize.ThirtyTwoBits;
-                default:
-                    throw new ArgumentOutOfRangeException("type","Index buffers can only be created for types that are sixteen or thirty two bits in length");
-            }
         }
 
         /// <summary>
@@ -101,12 +70,12 @@ namespace Microsoft.Xna.Framework.Graphics
         {
             SetDataInternal<T>(offsetInBytes, data, startIndex, elementCount, SetDataOptions.None);
         }
-        		
-		public void SetData<T>(T[] data, int startIndex, int elementCount) where T : struct
+
+        public void SetData<T>(T[] data, int startIndex, int elementCount) where T : struct
         {
             SetDataInternal<T>(0, data, startIndex, elementCount, SetDataOptions.None);
-		}
-		
+        }
+
         public void SetData<T>(T[] data) where T : struct
         {
             SetDataInternal<T>(0, data, 0, data.Length, SetDataOptions.None);
@@ -121,5 +90,5 @@ namespace Microsoft.Xna.Framework.Graphics
 
             PlatformSetData<T>(offsetInBytes, data, startIndex, elementCount, options);
         }
-	}
+    }
 }
