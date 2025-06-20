@@ -18,7 +18,6 @@ using Microsoft.Xna.Framework.Input.Touch;
 
 namespace Microsoft.Xna.Framework
 {
-    [CLSCompliant(false)]
     public class MonoGameAndroidGameView : SurfaceView, ISurfaceHolderCallback, View.IOnTouchListener
     {
         // What is the state of the app, for tracking surface recreation inside this class.
@@ -141,6 +140,12 @@ namespace Microsoft.Xna.Framework
 
         public bool OnTouch(View v, MotionEvent e)
         {
+            if (IsMouse(e.Device) && e.Action == MotionEventActions.Move)
+            {
+                Mouse.OnMouseMove(e);
+                return true;
+            }
+
             _touchManager.OnTouchEvent(e);
             return true;
         }
@@ -1158,6 +1163,7 @@ namespace Microsoft.Xna.Framework
         {
             if (device == null)
                 return false;
+
             var sources = device.Sources;
             return (sources & InputSourceType.Keyboard) == InputSourceType.Keyboard && device.VendorId != 0 && device.ProductId != 0;
         }
@@ -1166,20 +1172,41 @@ namespace Microsoft.Xna.Framework
         {
             if (device == null)
                 return false;
+
             var sources = device.Sources;
             return ((sources & InputSourceType.Gamepad) == InputSourceType.Gamepad || (sources & InputSourceType.Joystick) == InputSourceType.Joystick) && device.VendorId != 0 && device.ProductId != 0;
         }
 
+        private bool IsMouse(InputDevice device)
+        {
+            if (device == null)
+                return false;
+
+            var sources = device.Sources;
+            return ((sources & InputSourceType.Mouse) == InputSourceType.Mouse || (sources & InputSourceType.MouseRelative) == InputSourceType.MouseRelative);
+        }
+
         public override bool OnKeyDown(Keycode keyCode, KeyEvent e)
         {
+            if (e.RepeatCount != 0)
+                return base.OnKeyDown(keyCode, e);
+
             bool handled = false;
             if (IsGamePad(e.Device) && GamePad.OnKeyDown(keyCode, e))
                 return true;
 
-            handled = IsKeyboard(e.Device) && Keyboard.KeyDown(keyCode);
+            if (IsKeyboard(e.Device) || keyCode == Keycode.Back)
+            {
+                handled = Keyboard.KeyDown(keyCode, _gameWindow);
+            }
+
+            if (IsMouse(e.Device) && Mouse.OnButtonPressed(e))
+            {
+                handled = true;
+            }
 
             // we need to handle the Back key here because it doesn't work any other way
-            if (keyCode == Keycode.Back)
+            if (!handled && keyCode == Keycode.Back)
             {
                 GamePad.Back = true;
                 handled = true;
@@ -1204,17 +1231,31 @@ namespace Microsoft.Xna.Framework
 
         public override bool OnKeyUp(Keycode keyCode, KeyEvent e)
         {
+            var flags = e.Flags;
+            if (e.RepeatCount != 0)
+                return base.OnKeyUp(keyCode, e);
+
+            if (IsMouse(e.Device) && Mouse.OnButtonReleased(e))
+                return true;
+
             if (keyCode == Keycode.Back)
                 GamePad.Back = false;
+
             if (IsGamePad(e.Device) && GamePad.OnKeyUp(keyCode, e))
                 return true;
-            return IsKeyboard(e.Device) && Keyboard.KeyUp(keyCode);
+
+            return IsKeyboard(e.Device) && Keyboard.KeyUp(keyCode, _gameWindow);
         }
 
         public override bool OnGenericMotionEvent(MotionEvent e)
         {
             if (IsGamePad(e.Device) && GamePad.OnGenericMotionEvent(e))
                 return true;
+
+            if (IsMouse(e.Device) && Mouse.OnMouseEvent(e))
+            {
+                return true;
+            }
 
             return base.OnGenericMotionEvent(e);
         }

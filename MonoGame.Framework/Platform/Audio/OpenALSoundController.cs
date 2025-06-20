@@ -92,6 +92,8 @@ namespace Microsoft.Xna.Framework.Audio
         private const int DEFAULT_FREQUENCY = 48000;
         private const int DEFAULT_UPDATE_SIZE = 512;
         private const int DEFAULT_UPDATE_BUFFER_COUNT = 2;
+#elif DESKTOPGL
+        private static OggStreamer _oggstreamer;
 #endif
         private List<int> availableSourcesCollection;
         private List<int> inUseSourcesCollection;
@@ -191,7 +193,7 @@ namespace Microsoft.Xna.Framework.Audio
                 int frequency = DEFAULT_FREQUENCY;
                 int updateSize = DEFAULT_UPDATE_SIZE;
                 int updateBuffers = DEFAULT_UPDATE_BUFFER_COUNT;
-                if (OperatingSystem.IsAndroidVersionAtLeast(17))
+                if (PlatformInfo.IsAndroidVersionAtLeast(17))
                 {
                     Android.Util.Log.Debug("OAL", Game.Activity.PackageManager.HasSystemFeature(PackageManager.FeatureAudioLowLatency) ? "Supports low latency audio playback." : "Does not support low latency audio playback.");
 
@@ -208,7 +210,7 @@ namespace Microsoft.Xna.Framework.Audio
 
                     // If 4.4 or higher, then we don't need to double buffer on the application side.
                     // See http://stackoverflow.com/a/15006327
-                    if (OperatingSystem.IsAndroidVersionAtLeast (19))
+                    if (PlatformInfo.IsAndroidVersionAtLeast (19))
                     {
                         updateBuffers = 1;
                     }
@@ -264,6 +266,10 @@ namespace Microsoft.Xna.Framework.Audio
 #endif
 
                 _context = Alc.CreateContext(_device, attribute);
+
+#if DESKTOPGL
+                _oggstreamer = new OggStreamer();
+#endif
 
                 AlcHelper.CheckError("Could not create OpenAL context");
 
@@ -377,6 +383,10 @@ namespace Microsoft.Xna.Framework.Audio
             {
                 if (disposing)
                 {
+#if DESKTOPGL
+                    if(_oggstreamer != null)
+                        _oggstreamer.Dispose();
+#endif
                     for (int i = 0; i < allSourcesArray.Length; i++)
                     {
                         AL.DeleteSource(allSourcesArray[i]);
