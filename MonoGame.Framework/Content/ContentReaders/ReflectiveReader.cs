@@ -42,10 +42,13 @@ namespace Microsoft.Xna.Framework.Content
             if (baseType != null && baseType != typeof(object))
 				_baseTypeReader = manager.GetTypeReader(baseType);
 
+            // TargetType is the typeof(T) of the generic type parameter of this class.
+            #pragma warning disable IL2072
             _constructor = TargetType.GetDefaultConstructor();
 
             var properties = TargetType.GetAllProperties();
             var fields = TargetType.GetAllFields();
+            #pragma warning restore IL2072
             _readers = new List<ReadElement>(fields.Length + properties.Length);
 
             // Gather the properties.

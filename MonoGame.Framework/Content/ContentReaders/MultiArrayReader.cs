@@ -34,12 +34,14 @@ namespace Microsoft.Xna.Framework.Content
                 count *= dimensions[d] = input.ReadInt32();
 
 
+            // The programmer utilizing this function must ensure that the type T is not trimmed.
+#pragma warning disable IL3050 
             var array = existingInstance;
             if (array == null)
                 array = Array.CreateInstance(typeof(T), dimensions);//new T[count];
             else if (dimensions.Length != array.Rank)
                 throw new RankException("existingInstance");
-
+#pragma warning restore IL3050
             var indices = new int[rank];
 
             for (int i = 0; i < count; i++)

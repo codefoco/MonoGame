@@ -6,6 +6,8 @@ using System;
 using System.ComponentModel;
 using System.Globalization;
 
+#pragma warning disable IL2067
+
 namespace Microsoft.Xna.Framework.Design
 {
     public class Vector3TypeConverter : TypeConverter
@@ -72,3 +74,5 @@ namespace Microsoft.Xna.Framework.Design
         }
     }
 }
+
+#pragma warning restore IL2067
