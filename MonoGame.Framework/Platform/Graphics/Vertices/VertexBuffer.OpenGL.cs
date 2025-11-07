@@ -89,7 +89,13 @@ namespace Microsoft.Xna.Framework.Graphics
                     var tmpPtr = tmpHandle.AddrOfPinnedObject();
                     for (var i = 0; i < elementCount; i++)
                     {
+#if NET_4_0
+                        data[startIndex + i] = (T)Marshal.PtrToStructure(tmpPtr, typeof(T));
+#else
+#pragma warning disable IL2091
                         data[startIndex + i] = Marshal.PtrToStructure<T>(tmpPtr);
+#pragma warning restore IL2091
+#endif
                         tmpPtr = (IntPtr)(tmpPtr.ToInt64() + vertexStride);
                     }
                 }
@@ -106,8 +112,8 @@ namespace Microsoft.Xna.Framework.Graphics
 #endif
 
         private void PlatformSetData<T>(
-            int offsetInBytes, T[] data, int startIndex, int elementCount, int vertexStride, SetDataOptions options, int bufferSize, int elementSizeInBytes)
-            where T : struct
+int offsetInBytes, T[] data, int startIndex, int elementCount, int vertexStride, SetDataOptions options, int bufferSize, int elementSizeInBytes)
+where T : struct
         {
             Threading.BlockOnUIThread(SetDataState<T>.Action, new SetDataState<T>
             {
@@ -144,7 +150,11 @@ namespace Microsoft.Xna.Framework.Graphics
                 GraphicsExtensions.CheckGLError();
             }
 
+#if NET_4_0
+            var elementSizeInByte = Marshal.SizeOf(typeof(T));
+#else
             var elementSizeInByte = Marshal.SizeOf<T>();
+#endif
             if (elementSizeInByte == vertexStride || elementSizeInByte % vertexStride == 0)
             {
                 // there are no gaps so we can copy in one go
