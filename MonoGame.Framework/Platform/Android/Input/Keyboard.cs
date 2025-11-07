@@ -52,25 +52,29 @@ namespace Microsoft.Xna.Framework.Input
 
         private static readonly IDictionary<Keycode, Keys> KeyMap = LoadKeyMap();
 
-        internal static bool KeyDown(Keycode keyCode)
+        internal static bool KeyDown(Keycode keyCode, GameWindow window)
         {
             Keys key;
             if (KeyMap.TryGetValue(keyCode, out key) && key != Keys.None)
             {
                 if (!keys.Contains(key))
                     keys.Add(key);
+                window.OnKeyDown(new InputKeyEventArgs(key));
+
                 return true;
             }
             return false;
         }
 
-        internal static bool KeyUp(Keycode keyCode)
+        internal static bool KeyUp(Keycode keyCode, GameWindow window)
         {
             Keys key;
             if (KeyMap.TryGetValue(keyCode, out key) && key != Keys.None)
             {
                 if (keys.Contains(key))
                     keys.Remove(key);
+                window.OnKeyUp(new InputKeyEventArgs(key));
+
                 return true;
             }
             return false;
@@ -79,7 +83,7 @@ namespace Microsoft.Xna.Framework.Input
         private static IDictionary<Keycode, Keys> LoadKeyMap()
         {
             // create a map for every Keycode and default it to none so that every possible key is mapped
-            var maps = Enum.GetValues(typeof (Keycode))
+            var maps = Enum.GetValues<Keycode>()
                 .Cast<Keycode>()
                 .ToDictionary(key => key, key => Keys.None);
 
