@@ -12,6 +12,7 @@ using Windows.UI.Xaml.Controls;
 
 #if ANDROID
 using Android.Views;
+using Android.Util;
 #endif
 
 namespace Microsoft.Xna.Framework
@@ -397,7 +398,6 @@ namespace Microsoft.Xna.Framework
 
 
 #if WINDOWS_UAP
-        [CLSCompliant(false)]
         public SwapChainPanel SwapChainPanel { get; set; }
 #endif
 
@@ -450,10 +450,10 @@ namespace Microsoft.Xna.Framework
         internal void ForceSetFullScreen()
         {
             if (IsFullScreen)
-			{
-				Game.Activity.Window.ClearFlags(Android.Views.WindowManagerFlags.ForceNotFullscreen);
+            {
+                Game.Activity.Window.ClearFlags(WindowManagerFlags.ForceNotFullscreen);
                 Game.Activity.Window.SetFlags(WindowManagerFlags.Fullscreen, WindowManagerFlags.Fullscreen);
-			}
+            }
             else
                 Game.Activity.Window.SetFlags(WindowManagerFlags.ForceNotFullscreen, WindowManagerFlags.ForceNotFullscreen);
         }
@@ -651,7 +651,7 @@ namespace Microsoft.Xna.Framework
             TouchPanel.DisplayWidth = newClientBounds.Width;
             TouchPanel.DisplayHeight = newClientBounds.Height;
 
-            Android.Util.Log.Debug("MonoGame", "GraphicsDeviceManager.ResetClientBounds: newClientBounds=" + newClientBounds.ToString());
+            Log.Debug("MonoGame", "GraphicsDeviceManager.ResetClientBounds: newClientBounds=" + newClientBounds.ToString());
 #endif
         }
 

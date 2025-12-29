@@ -2,9 +2,11 @@
 // This file is subject to the terms and conditions defined in
 // file 'LICENSE.txt', which is part of this source code package.
 
-using System;
 using Android.OS;
 using Android.Views;
+using Android.Util;
+
+using MonoGame.Framework.Utilities;
 
 namespace Microsoft.Xna.Framework.Input
 {
@@ -37,10 +39,13 @@ namespace Microsoft.Xna.Framework.Input
             var capabilities = new GamePadCapabilities();
             capabilities.IsConnected = true;
             capabilities.GamePadType = GamePadType.GamePad;
+
+#pragma warning disable CS0618 // Type or member is obsolete
             capabilities.HasLeftVibrationMotor = capabilities.HasRightVibrationMotor =
-                !OperatingSystem.IsAndroidVersionAtLeast (31) ?
+                !PlatformInfo.IsAndroidVersionAtLeast (31) ?
                     device.Vibrator.HasVibrator :
                     device.VibratorManager.DefaultVibrator.HasVibrator;
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // build out supported inputs from what the gamepad exposes
             int[] keyMap = new int[17];
@@ -70,7 +75,7 @@ namespace Microsoft.Xna.Framework.Input
             // get a bool[] with indices matching the keyMap
             bool[] hasMap = new bool[16];
             // HasKeys() was defined in Kitkat / API19 / Android 4.4
-            if (!OperatingSystem.IsAndroidVersionAtLeast(19))
+            if (!PlatformInfo.IsAndroidVersionAtLeast(19))
             {
                 var keyMap2 = new Keycode[keyMap.Length];
                 for(int i=0; i<keyMap.Length;i++)
@@ -92,18 +97,21 @@ namespace Microsoft.Xna.Framework.Input
             // this will need fixing
             capabilities.HasLeftXThumbStick = hasMap[4];
             capabilities.HasLeftYThumbStick = hasMap[4];
+            capabilities.HasLeftStickButton = hasMap[4];
+
             capabilities.HasRightXThumbStick = hasMap[5];
             capabilities.HasRightYThumbStick = hasMap[5];
+            capabilities.HasRightStickButton = hasMap[5];
 
             capabilities.HasLeftShoulderButton = hasMap[6];
             capabilities.HasRightShoulderButton = hasMap[7];
             capabilities.HasLeftTrigger = hasMap[8];
             capabilities.HasRightTrigger = hasMap[9];
 
-            capabilities.HasDPadDownButton = hasMap[10];
-            capabilities.HasDPadLeftButton = hasMap[11];
-            capabilities.HasDPadRightButton = hasMap[12];
-            capabilities.HasDPadUpButton = hasMap[13];
+            capabilities.HasDPadDownButton = true;
+            capabilities.HasDPadLeftButton = true;
+            capabilities.HasDPadRightButton = true;
+            capabilities.HasDPadUpButton = true;
 
             capabilities.HasStartButton = hasMap[14];
             capabilities.HasBackButton = hasMap[15];
@@ -171,7 +179,7 @@ namespace Microsoft.Xna.Framework.Input
             var dvc = InputDevice.GetDevice(gamePad._deviceId);
             if (dvc == null)
             {
-                Android.Util.Log.Debug("MonoGame", $"Detected controller disconnect [{index}]");
+                Log.Debug("MonoGame", $"Detected controller disconnect [{index}]");
                 gamePad._isConnected = false;
                 return GamePadState.Default;
             }
@@ -189,10 +197,11 @@ namespace Microsoft.Xna.Framework.Input
             if (gamePad == null)
                 return false;
 
-            var vibrator = !OperatingSystem.IsAndroidVersionAtLeast (31) ? gamePad._device.Vibrator : gamePad._device.VibratorManager.DefaultVibrator;
+#pragma warning disable CS0618 // Type or member is obsolete
+            var vibrator = !PlatformInfo.IsAndroidVersionAtLeast (31) ? gamePad._device.Vibrator : gamePad._device.VibratorManager.DefaultVibrator;
             if (!vibrator.HasVibrator)
                 return false;
-            if (!OperatingSystem.IsAndroidVersionAtLeast (26))
+            if (!PlatformInfo.IsAndroidVersionAtLeast (26))
             {
                 vibrator.Vibrate(500);
             }
@@ -201,6 +210,7 @@ namespace Microsoft.Xna.Framework.Input
                 vibrator.Vibrate (VibrationEffect.CreateOneShot(500, VibrationEffect.DefaultAmplitude));
             }
             return true;
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         internal static AndroidGamePad GetGamePad(InputDevice device)
@@ -218,14 +228,14 @@ namespace Microsoft.Xna.Framework.Input
                 }
                 else if (pad != null && !pad._isConnected && pad._descriptor == device.Descriptor)
                 {
-                    Android.Util.Log.Debug("MonoGame", "Found previous controller [" + i + "] " + device.Name);
+                    Log.Debug("MonoGame", "Found previous controller [" + i + "] " + device.Name);
                     pad._deviceId = device.Id;
                     pad._isConnected = true;
                     return pad;
                 }
                 else if (pad == null)
                 {
-                    Android.Util.Log.Debug("MonoGame", "Found new controller [" + i + "] " + device.Name);
+                    Log.Debug("MonoGame", "Found new controller [" + i + "] " + device.Name);
                     pad = new AndroidGamePad(device);
                     GamePads[i] = pad;
                     return pad;
@@ -240,7 +250,7 @@ namespace Microsoft.Xna.Framework.Input
             // If we're holding onto a disconnected pad, overwrite it with this one
             if (firstDisconnectedPadId >= 0)
             {
-                Android.Util.Log.Debug("MonoGame", "Found new controller in place of disconnected controller [" + firstDisconnectedPadId + "] " + device.Name);
+                Log.Debug("MonoGame", "Found new controller in place of disconnected controller [" + firstDisconnectedPadId + "] " + device.Name);
                 var pad = new AndroidGamePad(device);
                 GamePads[firstDisconnectedPadId] = pad;
                 return pad;
@@ -296,7 +306,7 @@ namespace Microsoft.Xna.Framework.Input
             }
             else
             {
-                gamePad._buttons &= Buttons.LeftTrigger;
+                gamePad._buttons &= ~Buttons.LeftTrigger;
             }
 
             if (gamePad._rightTrigger > 0f)
@@ -305,7 +315,7 @@ namespace Microsoft.Xna.Framework.Input
             }
             else
             {
-                gamePad._buttons &= Buttons.RightTrigger;
+                gamePad._buttons &= ~Buttons.RightTrigger;
             }
 
             if (!gamePad.DPadButtons)

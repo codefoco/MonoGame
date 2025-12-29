@@ -578,12 +578,6 @@ namespace MonoGame.OpenGL
         [System.Security.SuppressUnmanagedCodeSecurity()]
         [UnmanagedFunctionPointer(callingConvention)]
         [MonoNativeFunctionWrapper]
-        internal delegate void MakeCurrentDelegate(IntPtr window);
-        internal static MakeCurrentDelegate MakeCurrent;
-
-        [System.Security.SuppressUnmanagedCodeSecurity()]
-        [UnmanagedFunctionPointer(callingConvention)]
-        [MonoNativeFunctionWrapper]
         internal unsafe delegate void GetIntegerDelegate(int param, [Out] int* data);
         internal static GetIntegerDelegate GetIntegerv;
 
@@ -1266,8 +1260,6 @@ namespace MonoGame.OpenGL
                 Viewport = LoadFunction<ViewportDelegate> ("glViewport");
             if (Scissor == null)
                 Scissor = LoadFunction<ScissorDelegate> ("glScissor");
-            if (MakeCurrent == null)
-                MakeCurrent = LoadFunction<MakeCurrentDelegate> ("glMakeCurrent");
 
             GetError = LoadFunction<GetErrorDelegate> ("glGetError");
 
@@ -1426,63 +1418,63 @@ namespace MonoGame.OpenGL
             LoadExtensions ();
         }
 
-        internal static List<string> Extensions = new List<string> ();
+        internal static List<string> Extensions;
 
-        //[Conditional("DEBUG")]
-        //[DebuggerHidden]
-        static void LogExtensions()
+        internal static bool HasExtension(string name)
         {
-#if __ANDROID__
-            Android.Util.Log.Verbose("GL","Supported Extensions");
-            foreach (var ext in Extensions)
-                Android.Util.Log.Verbose("GL", "   " + ext);
-#endif
+            if (Extensions != null)
+                return Extensions.Contains(name);
+
+            return false;
         }
 
         internal static void LoadExtensions()
         {
+            if (Extensions == null)
+                Extensions = new List<string>();
+
             if (Extensions.Count == 0)
             {
-                string extstring = GL.GetString(StringName.Extensions);
-                var error = GL.GetError();
+                string extstring = GetString(StringName.Extensions);
+                ErrorCode error = GetError();
                 if (!string.IsNullOrEmpty(extstring) && error == ErrorCode.NoError)
                     Extensions.AddRange(extstring.Split(' '));
             }
-            LogExtensions();
+
             // now load Extensions :)
-            if (GL.GenRenderbuffers == null && Extensions.Contains("GL_EXT_framebuffer_object"))
+            if (GL.GenRenderbuffers == null && HasExtension("GL_EXT_framebuffer_object"))
             {
                 GL.LoadFrameBufferObjectEXTEntryPoints();
             }
             if (GL.RenderbufferStorageMultisample == null)
             {                
-                if (Extensions.Contains("GL_APPLE_framebuffer_multisample"))
+                if (HasExtension("GL_APPLE_framebuffer_multisample"))
                 {
                     GL.RenderbufferStorageMultisample = LoadFunction<GL.RenderbufferStorageMultisampleDelegate>("glRenderbufferStorageMultisampleAPPLE");
                     GL.BlitFramebuffer = LoadFunction<GL.BlitFramebufferDelegate>("glResolveMultisampleFramebufferAPPLE");
                 }
-                else if (Extensions.Contains("GL_EXT_multisampled_render_to_texture"))
+                else if (HasExtension("GL_EXT_multisampled_render_to_texture"))
                 {
                     GL.RenderbufferStorageMultisample = LoadFunction<GL.RenderbufferStorageMultisampleDelegate>("glRenderbufferStorageMultisampleEXT");
                     GL.FramebufferTexture2DMultiSample = LoadFunction<GL.FramebufferTexture2DMultiSampleDelegate>("glFramebufferTexture2DMultisampleEXT");
 
                 }
-                else if (Extensions.Contains("GL_IMG_multisampled_render_to_texture"))
+                else if (HasExtension("GL_IMG_multisampled_render_to_texture"))
                 {
                     GL.RenderbufferStorageMultisample = LoadFunction<GL.RenderbufferStorageMultisampleDelegate>("glRenderbufferStorageMultisampleIMG");
                     GL.FramebufferTexture2DMultiSample = LoadFunction<GL.FramebufferTexture2DMultiSampleDelegate>("glFramebufferTexture2DMultisampleIMG");
                 }
-                else if (Extensions.Contains("GL_NV_framebuffer_multisample"))
+                else if (HasExtension("GL_NV_framebuffer_multisample"))
                 {
                     GL.RenderbufferStorageMultisample = LoadFunction<GL.RenderbufferStorageMultisampleDelegate>("glRenderbufferStorageMultisampleNV");
                     GL.BlitFramebuffer = LoadFunction<GL.BlitFramebufferDelegate>("glBlitFramebufferNV");
                 }
             }
-            if (GL.BlendFuncSeparatei == null && Extensions.Contains("GL_ARB_draw_buffers_blend"))
+            if (GL.BlendFuncSeparatei == null && HasExtension("GL_ARB_draw_buffers_blend"))
             {
                 GL.BlendFuncSeparatei = LoadFunction<GL.BlendFuncSeparateiDelegate>("BlendFuncSeparateiARB");
             }
-            if (GL.BlendEquationSeparatei == null && Extensions.Contains("GL_ARB_draw_buffers_blend"))
+            if (GL.BlendEquationSeparatei == null && HasExtension("GL_ARB_draw_buffers_blend"))
             {
                 GL.BlendEquationSeparatei = LoadFunction<GL.BlendEquationSeparateiDelegate>("BlendEquationSeparateiARB");
             }
@@ -1532,7 +1524,14 @@ namespace MonoGame.OpenGL
 
         internal unsafe static string GetString (StringName name)
         {
-            return Marshal.PtrToStringAnsi (GetStringInternal (name));
+            if (GetStringInternal == null)
+                return string.Empty;
+
+            IntPtr s = GetStringInternal (name);
+            if (s == IntPtr.Zero)
+                return string.Empty;
+
+            return Marshal.PtrToStringAnsi (s);
         }
 
         protected static IntPtr MarshalStringArrayToPtr (string[] strings)
@@ -1561,21 +1560,12 @@ namespace MonoGame.OpenGL
             return intPtr;
         }
 
-        protected unsafe static IntPtr MarshalStringToPtr (string str)
+        protected static IntPtr MarshalStringToPtr (string str)
         {
             if (string.IsNullOrEmpty (str)) {
                 return IntPtr.Zero;
             }
-            int num = Encoding.ASCII.GetMaxByteCount (str.Length) + 1;
-            IntPtr intPtr = Marshal.AllocHGlobal (num);
-            if (intPtr == IntPtr.Zero) {
-                throw new OutOfMemoryException ();
-            }
-            fixed (char* chars = str + RuntimeHelpers.OffsetToStringData / 2) {
-                int bytes = Encoding.ASCII.GetBytes (chars, str.Length, (byte*)((void*)intPtr), num);
-                Marshal.WriteByte (intPtr, bytes, 0);
-                return intPtr;
-            }
+            return Marshal.StringToHGlobalAnsi(str);
         }
 
         protected static void FreeStringArrayPtr (IntPtr ptr, int length)
