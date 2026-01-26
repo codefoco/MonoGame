@@ -64,6 +64,7 @@ namespace Microsoft.Xna.Framework.Input
             };
             if (controller.ExtendedGamepad != null)
             {
+                capabilities.IsConnected = true;
                 capabilities.HasAButton = true;
                 capabilities.HasBButton = true;
                 capabilities.HasXButton = true;
@@ -85,6 +86,7 @@ namespace Microsoft.Xna.Framework.Input
             }
             else if (controller.Gamepad != null)
             {
+                capabilities.IsConnected = true;
                 capabilities.HasAButton = true;
                 capabilities.HasBButton = true;
                 capabilities.HasXButton = true;
@@ -126,6 +128,10 @@ namespace Microsoft.Xna.Framework.Input
                     continue;
 
                 if (controller.PlayerIndex != (int)ind)
+                    continue;
+
+                // validate controller has a valid input profile before reporting as connected
+                if (controller.ExtendedGamepad == null && controller.Gamepad == null)
                     continue;
 
                 connected = true;
