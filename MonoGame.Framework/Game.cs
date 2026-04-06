@@ -121,6 +121,8 @@ namespace Microsoft.Xna.Framework
                         if (disposable != null)
                             disposable.Dispose();
                     }
+                    _components.ComponentAdded -= Components_ComponentAdded;
+                    _components.ComponentRemoved -= Components_ComponentRemoved;
                     _components = null;
 
                     if (_content != null)
