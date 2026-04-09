@@ -15,6 +15,8 @@ using UIKit;
 using Android.Content;
 using Android.Graphics;
 using Android.Provider;
+using MonoGame.Framework.Utilities;
+using Uri = Android.Net.Uri;
 #endif
 
 namespace Microsoft.Xna.Framework.Media
@@ -43,7 +45,7 @@ namespace Microsoft.Xna.Framework.Media
 #elif IOS && !TVOS
         private MPMediaItemArtwork thumbnail;
 #elif ANDROID
-        private Android.Net.Uri thumbnail;
+        private Uri thumbnail;
 #endif
 
         /// <summary>
@@ -155,7 +157,7 @@ namespace Microsoft.Xna.Framework.Media
             this.thumbnail = thumbnail;
         }
 #elif ANDROID
-        internal Album(SongCollection songCollection, string name, Artist artist, Genre genre, Android.Net.Uri thumbnail)
+        internal Album(SongCollection songCollection, string name, Artist artist, Genre genre, Uri thumbnail)
             : this(songCollection, name, artist, genre)
         {
             this.thumbnail = thumbnail;
@@ -174,7 +176,6 @@ namespace Microsoft.Xna.Framework.Media
         }
         
 #if IOS && !TVOS
-        [CLSCompliant(false)]
         public UIImage GetAlbumArt(int width = 0, int height = 0)
         {
             if (width == 0)
@@ -185,11 +186,11 @@ namespace Microsoft.Xna.Framework.Media
 			return this.thumbnail.ImageWithSize(new CGSize(width, height));
         }
 #elif ANDROID
-        [CLSCompliant(false)]
         public Bitmap GetAlbumArt(int width = 0, int height = 0)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             Bitmap albumArt;
-            if (!OperatingSystem.IsAndroidVersionAtLeast (29)) {
+            if (!PlatformInfo.IsAndroidVersionAtLeast (29)) {
                 albumArt = MediaStore.Images.Media.GetBitmap(MediaLibrary.Context.ContentResolver, this.thumbnail);
             } else {
                 var source = ImageDecoder.CreateSource (MediaLibrary.Context.ContentResolver, this.thumbnail);
@@ -197,6 +198,7 @@ namespace Microsoft.Xna.Framework.Media
             }
             if (width == 0 || height == 0)
                 return albumArt;
+#pragma warning restore CS0618 // Type or member is obsolete
 
             var scaledAlbumArt = Bitmap.CreateScaledBitmap(albumArt, width, height, true);
             albumArt.Dispose();
@@ -219,13 +221,11 @@ namespace Microsoft.Xna.Framework.Media
 #endif
 
 #if IOS && !TVOS
-        [CLSCompliant(false)]
         public UIImage GetThumbnail()
         {
             return this.GetAlbumArt(220, 220);
         }
 #elif ANDROID
-        [CLSCompliant(false)]
         public Bitmap GetThumbnail()
         {
             return this.GetAlbumArt(220, 220);
