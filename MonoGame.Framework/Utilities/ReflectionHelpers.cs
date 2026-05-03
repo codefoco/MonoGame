@@ -15,11 +15,8 @@ namespace MonoGame.Framework.Utilities
             {
                 throw new NullReferenceException("Must supply the targetType parameter");
             }
-#if NET45            
-            return targetType.GetTypeInfo().IsValueType;
-#else
+
             return targetType.IsValueType;
-#endif
         }
 
         public static Type GetBaseType(Type targetType)
@@ -28,11 +25,8 @@ namespace MonoGame.Framework.Utilities
             {
                 throw new NullReferenceException("Must supply the targetType parameter");
             }
-#if NET45            
-            return targetType.GetTypeInfo().BaseType;
-#else
+
             return targetType.BaseType;
-#endif
         }
 
         /// <summary>
@@ -44,11 +38,8 @@ namespace MonoGame.Framework.Utilities
             {
                 throw new NullReferenceException("Must supply the targetType parameter");
             }
-#if NET45            
-            return targetType.GetTypeInfo().Assembly;
-#else
+
             return targetType.Assembly;
-#endif
         }
 
         /// <summary>
@@ -63,24 +54,15 @@ namespace MonoGame.Framework.Utilities
 
             if (t == typeof(object))
                 return false;
-#if NET45            
-            var ti = t.GetTypeInfo();
-            if (ti.IsClass && !ti.IsAbstract)
-                return true;
-#else            
-            if (t.IsClass && !t.IsAbstract)
-                return true;
-#endif
-            return false;
+
+            return t.IsClass && !t.IsAbstract;
         }
 
         public static MethodInfo GetMethodInfo(Type type, string methodName)
         {
-#if NET45            
-            return type.GetTypeInfo().GetDeclaredMethod(methodName);
-#else
+#pragma warning disable IL2070
             return type.GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
-#endif
+#pragma warning restore IL2070
         }
 
         public static MethodInfo GetPropertyGetMethod(PropertyInfo property)
@@ -90,11 +72,7 @@ namespace MonoGame.Framework.Utilities
                 throw new NullReferenceException("Must supply the property parameter");
             }
 
-#if NET45            
-            return property.GetMethod;
-#else
             return property.GetGetMethod();
-#endif
         }
 
         public static MethodInfo GetPropertySetMethod(PropertyInfo property)
@@ -104,11 +82,7 @@ namespace MonoGame.Framework.Utilities
                 throw new NullReferenceException("Must supply the property parameter");
             }
 
-#if NET45            
-            return property.SetMethod;
-#else
             return property.GetSetMethod();
-#endif
         }
 
         public static T GetCustomAttribute<T>(MemberInfo member) where T : Attribute
@@ -116,11 +90,7 @@ namespace MonoGame.Framework.Utilities
             if (member == null)
                 throw new NullReferenceException("Must supply the member parameter");
 
-#if NET45            
-            return member.GetCustomAttribute(typeof(T)) as T;
-#else
             return Attribute.GetCustomAttribute(member, typeof(T)) as T;
-#endif
         }
 
         /// <summary>
@@ -165,14 +135,8 @@ namespace MonoGame.Framework.Utilities
                 throw new ArgumentNullException("type");
             if (objectType == null)
                 throw new ArgumentNullException("objectType");
-#if NET45
-            if (type.GetTypeInfo().IsAssignableFrom(objectType.GetTypeInfo()))
-                return true;
-#else
-            if (type.IsAssignableFrom(objectType))
-                return true;     
-#endif
-            return false;
+
+            return type.IsAssignableFrom(objectType);
         }
     }
 }
