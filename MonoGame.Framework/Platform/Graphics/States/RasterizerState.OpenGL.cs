@@ -50,8 +50,8 @@ namespace Microsoft.Xna.Framework.Graphics
                 }
             }
 
-#if WINDOWS || DESKTOPGL
-			if (FillMode == FillMode.Solid) 
+#if WINDOWS || (DESKTOPGL && !LINUX_GLES)
+            if (FillMode == FillMode.Solid) 
 				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             else
 				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
@@ -94,7 +94,7 @@ namespace Microsoft.Xna.Framework.Graphics
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
-    }
+                    }
                     GL.Enable(EnableCap.PolygonOffsetFill);
                     GL.PolygonOffset(this.SlopeScaleDepthBias, this.DepthBias * depthMul);
                 }
