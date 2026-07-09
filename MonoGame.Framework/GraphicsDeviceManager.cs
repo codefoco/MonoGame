@@ -306,7 +306,7 @@ namespace Microsoft.Xna.Framework
                 // this they have to respond to the PreparingDeviceSettingsEvent and modify
                 // args.GraphicsDeviceInformation.PresentationParameters.MultiSampleCount
                 presentationParameters.MultiSampleCount = GraphicsDevice != null
-                    ? GraphicsDevice.GraphicsCapabilities.MaxMultiSampleCount
+                    ? GraphicsDevice.PlatformGetMaxMultiSampleCount(_preferredBackBufferFormat)
                     : 32;
             }
             else
