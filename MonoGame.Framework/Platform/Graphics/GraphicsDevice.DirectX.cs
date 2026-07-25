@@ -252,7 +252,7 @@ namespace Microsoft.Xna.Framework.Graphics
         {
             // Clamp MultiSampleCount
             PresentationParameters.MultiSampleCount =
-                GetClampedMultisampleCount(PresentationParameters.MultiSampleCount);
+                GetClampedMultisampleCount(PresentationParameters.BackBufferFormat, PresentationParameters.MultiSampleCount);
 
             _d3dContext.OutputMerger.SetTargets((SharpDX.Direct3D11.DepthStencilView)null,
                                                 (SharpDX.Direct3D11.RenderTargetView)null);
@@ -956,6 +956,21 @@ namespace Microsoft.Xna.Framework.Graphics
             return multisampleDesc;
         }
 
+        private void PlatformClearColor(Vector4 color)
+        {
+            lock (_d3dContext)
+            {
+                // Clear the diffuse render buffer.
+                int count = _currentRenderTargets.Length;
+                for (int i = 0; i < count; i++)
+                {
+                    RenderTargetView view = _currentRenderTargets[i];
+                    if (view != null)
+                        _d3dContext.ClearRenderTargetView(view, new RawColor4(color.X, color.Y, color.Z, color.W));
+                }
+            }
+        }
+
         private void PlatformClear(ClearOptions options, Vector4 color, float depth, int stencil)
         {
             // Clear options for depth/stencil buffer if not attached.
@@ -975,8 +990,9 @@ namespace Microsoft.Xna.Framework.Graphics
                 // Clear the diffuse render buffer.
                 if ((options & ClearOptions.Target) == ClearOptions.Target)
                 {
-                    foreach (var view in _currentRenderTargets)
+                    for (int i = 0; i < _currentRenderTargets.Length; i++)
                     {
+                        RenderTargetView view = _currentRenderTargets[i];
                         if (view != null)
 							_d3dContext.ClearRenderTargetView(view, new RawColor4(color.X, color.Y, color.Z, color.W));
                     }
@@ -1148,6 +1164,13 @@ namespace Microsoft.Xna.Framework.Graphics
                 _tempRenderTargetBinding[0] = new RenderTargetBinding(renderTarget, arraySlice);
                 SetRenderTargets(_tempRenderTargetBinding);
             }
+        }
+
+        internal void PlatformGetDefaultRenderTargetSize(out int renderTargetWidth, out int renderTargetHeight, out int yoffset)
+        {
+            renderTargetWidth = PresentationParameters.BackBufferWidth;
+            renderTargetHeight = PresentationParameters.BackBufferHeight;
+            yoffset = 0;
         }
 
         private void PlatformApplyDefaultRenderTarget()
@@ -1677,6 +1700,38 @@ namespace Microsoft.Xna.Framework.Graphics
         private static Rectangle PlatformGetTitleSafeArea(int x, int y, int width, int height)
         {
             return new Rectangle(x, y, width, height);
+        }
+
+        private string PlatformGetVersionDescription()
+        {
+            return GetFeatureLevel() + " (" + Adapter.Description + ")";
+        }
+
+        private string GetFeatureLevel()
+        {
+            switch (_d3dDevice.FeatureLevel)
+            {
+                case FeatureLevel.Level_9_1:
+                    return "DirectX 9.1";
+                case FeatureLevel.Level_9_2:
+                    return "DirectX 9.2";
+                case FeatureLevel.Level_9_3:
+                    return "DirectX 9.3";
+                case FeatureLevel.Level_10_0:
+                    return "DirectX 10.0";
+                case FeatureLevel.Level_10_1:
+                    return "DirectX 10.1";
+                case FeatureLevel.Level_11_0:
+                    return "DirectX 11.0";
+                case FeatureLevel.Level_11_1:
+                    return "DirectX 11.1";
+                case FeatureLevel.Level_12_0:
+                    return "DirectX 12.0";
+                case FeatureLevel.Level_12_1:
+                    return "DirectX 12.1";
+            }
+
+            return "DirectX";
         }
     }
 }
