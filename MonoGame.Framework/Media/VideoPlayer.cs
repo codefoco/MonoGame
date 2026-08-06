@@ -202,6 +202,7 @@ namespace Microsoft.Xna.Framework.Media
                 if (state == MediaState.Paused)
                 {
                     PlatformResume();
+                    _state = MediaState.Playing;
                     return;
                 }
             }
@@ -255,10 +256,11 @@ namespace Microsoft.Xna.Framework.Media
             if (state == MediaState.Stopped)
             {
                 PlatformPlay();
-                return;
             }
-
-            PlatformResume();
+            else 
+            {
+                PlatformResume();
+            }
 
             _state = MediaState.Playing;
         }
