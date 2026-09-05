@@ -328,7 +328,7 @@ namespace Microsoft.Xna.Framework.Graphics
             {
                 bool displayChanged = false;
 #if DESKTOPGL
-                var displayIndex = Sdl.Display.GetWindowDisplayIndex (SdlGameWindow.Instance.Handle);
+                int displayIndex = Sdl.Display.GetWindowDisplayIndex(SdlGameWindow.Instance.Handle);
                 displayChanged = displayIndex != _displayIndex;
 #endif
                 if (_supportedDisplayModes == null || displayChanged)

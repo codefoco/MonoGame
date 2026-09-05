@@ -102,7 +102,6 @@ namespace Microsoft.Xna.Framework.Graphics
         }
 
         /// <inheritdoc/>
-        [CLSCompliant(false)]
         public RenderTargetView GetRenderTargetView(int arraySlice)
         {
             GenerateIfRequired();
@@ -110,7 +109,7 @@ namespace Microsoft.Xna.Framework.Graphics
         }
 
         /// <inheritdoc/>
-        [CLSCompliant(false)]
+        
         public DepthStencilView GetDepthStencilView()
         {
             GenerateIfRequired();

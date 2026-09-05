@@ -3,8 +3,7 @@
 // file 'LICENSE.txt', which is part of this source code package.
 
 using System;
-using System.IO;
-using System.Linq;
+using AndroidMediaPlayer = Android.Media.MediaPlayer;
 
 namespace Microsoft.Xna.Framework.Media
 {
@@ -13,11 +12,11 @@ namespace Microsoft.Xna.Framework.Media
     /// </summary>
     public sealed partial class Video : IDisposable
     {
-        internal Android.Media.MediaPlayer Player;
+        internal AndroidMediaPlayer Player;
 
         private void PlatformInitialize()
         {
-            Player = new Android.Media.MediaPlayer();
+            Player = new AndroidMediaPlayer();
             if (Player != null)
             {
                 var afd = Game.Activity.Assets.OpenFd(FileName);
