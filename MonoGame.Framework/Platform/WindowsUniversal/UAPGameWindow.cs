@@ -40,6 +40,7 @@ namespace Microsoft.Xna.Framework
         private bool _isFocusChanged = false;
         private CoreWindowActivationState _newActivationState;
         private bool _backPressed = false;
+        private MouseCursor _mouseCursor;
 
         #region Internal Properties
 
@@ -48,6 +49,23 @@ namespace Microsoft.Xna.Framework
         public ApplicationView AppView { get { return _appView; } }
 
         internal bool IsExiting { get; set; }
+
+        internal MouseCursor MouseCursor
+        {
+            get
+            {
+                return _mouseCursor;
+            }
+            set
+            {
+                if (_mouseCursor == value)
+                    return;
+
+                _mouseCursor = value;
+
+                UpdateCursor();
+            }
+        }
 
         #endregion
 
@@ -113,6 +131,7 @@ namespace Microsoft.Xna.Framework
         {
             _coreWindow = coreWindow;
             _inputEvents = new InputEvents(_coreWindow, inputElement, touchQueue);
+            _mouseCursor = MouseCursor.Arrow;
 
             _dinfo = DisplayInformation.GetForCurrentView();
             _appView = ApplicationView.GetForCurrentView();
@@ -126,15 +145,9 @@ namespace Microsoft.Xna.Framework
             _coreWindow.Activated += Window_FocusChanged;
             _coreWindow.Dispatcher.AcceleratorKeyActivated += Dispatcher_AcceleratorKeyActivated;
 
-            if (Windows.Foundation.Metadata.ApiInformation.IsTypePresent("Windows.Phone.UI.Input.HardwareButtons"))
-                Windows.Phone.UI.Input.HardwareButtons.BackPressed += this.HardwareButtons_BackPressed;
-            else
-                SystemNavigationManager.GetForCurrentView().BackRequested += this.BackRequested;
+            SystemNavigationManager.GetForCurrentView().BackRequested += this.BackRequested;
 
             SetViewBounds(_appView.VisibleBounds.Width, _appView.VisibleBounds.Height);
-
-            SetCursor(false);
-
         }
 
         internal void RegisterCoreWindowService()
@@ -195,6 +208,10 @@ namespace Microsoft.Xna.Framework
             {
                 _isSizeChanged = false;
 
+                if (_viewBounds.Height == _newViewBounds.Height &&
+                    _viewBounds.Width == _newViewBounds.Width)
+                    return;
+
                 var manager = Game.graphicsDeviceManager;
 
                 // Set the new client bounds.
@@ -223,7 +240,9 @@ namespace Microsoft.Xna.Framework
             {
                 case CoreAcceleratorKeyEventType.KeyDown:
                 case CoreAcceleratorKeyEventType.SystemKeyDown:
-                    OnKeyDown(new InputKeyEventArgs(key));
+                    if (!args.KeyStatus.WasKeyDown)
+                        OnKeyDown(new InputKeyEventArgs(key));
+
                     break;
                 case CoreAcceleratorKeyEventType.KeyUp:
                 case CoreAcceleratorKeyEventType.SystemKeyUp:
@@ -262,6 +281,21 @@ namespace Microsoft.Xna.Framework
                 result |= DisplayOrientations.PortraitFlipped;
 
             return result;
+        }
+
+        internal void TrySetFullScreen(bool fullScreen)
+        {
+            if (_appView.IsFullScreenMode == fullScreen)
+                return;
+
+            if (fullScreen)
+            {
+                _appView.TryEnterFullScreenMode();
+            }
+            else
+            {
+                _appView.ExitFullScreenMode();
+            }
         }
 
         internal void SetClientSize(int width, int height)
@@ -318,17 +352,6 @@ namespace Microsoft.Xna.Framework
             }
         }
 
-        private void HardwareButtons_BackPressed(object sender, BackPressedEventArgs e)
-        {
-            // We need to manually hide the keyboard input UI when the back button is pressed
-            if (KeyboardInput.IsVisible)
-                KeyboardInput.Cancel(null);
-            else
-                _backPressed = true;
-
-            e.Handled = true;
-        }
-
         private void BackRequested(object sender, BackRequestedEventArgs e)
         {
             // Prevent Xbox from suspending the app when the user press 'B' button.
@@ -343,29 +366,50 @@ namespace Microsoft.Xna.Framework
 
         protected override void SetTitle(string title)
         {
-            Debug.WriteLine("WARNING: GameWindow.Title has no effect under UWP.");
+            ApplicationView.GetForCurrentView().Title = title;
         }
 
-        internal void SetCursor(bool visible)
+        public override bool GetDeviceDPI(out float dpi)
         {
-            if ( _coreWindow == null )
+            var displayInformation = DisplayInformation.GetForCurrentView();
+            if (displayInformation == null)
+            {
+                dpi = 0f;
+                return false;
+            }
+
+            int iscale = (int)displayInformation.ResolutionScale;
+            dpi = DEFAULT_DPI * iscale / 100f;
+            return true;
+        }
+
+        internal void UpdateCursor()
+        {
+            if ( _coreWindow == null)
                 return;
+
+            bool visible = Game.IsMouseVisible;
 
             var asyncResult = _coreWindow.Dispatcher.RunIdleAsync( (e) =>
             {
                 if (visible)
-                    _coreWindow.PointerCursor = new CoreCursor(CoreCursorType.Arrow, 0);
+                    _coreWindow.PointerCursor = _mouseCursor.Cursor;
                 else
                     _coreWindow.PointerCursor = null;
-
-                // On UAP platform it is also necessary to set the cursor of CoreIndependentInputSource in InputEvents
-                _inputEvents.CoreCursor = _coreWindow.PointerCursor;
             });
+
+            // Also set cursor on CoreIndependentInputSource (for SwapChainPanel)
+            if (_inputEvents != null)
+            {
+                if (visible)
+                    _inputEvents.CoreCursor = _mouseCursor.Cursor;
+                else
+                    _inputEvents.CoreCursor = null;
+            }
         }
 
         internal void RunLoop()
         {
-            SetCursor(Game.IsMouseVisible);
             _coreWindow.Activate();
 
             while (true)

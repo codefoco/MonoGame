@@ -3,9 +3,9 @@
 // file 'LICENSE.txt', which is part of this source code package.
 
 using System;
-using Android.Views;
-using Microsoft.Xna.Framework.Audio;
+using Android.Content.Res;
 using Microsoft.Xna.Framework.Media;
+using AndroidLog = Android.Util.Log;
 
 namespace Microsoft.Xna.Framework
 {
@@ -77,7 +77,7 @@ namespace Microsoft.Xna.Framework
 
             switch (Game.Activity.Resources.Configuration.Orientation)
             {
-                case Android.Content.Res.Orientation.Portrait:
+                case Orientation.Portrait:
                     this._gameWindow.SetOrientation(currentOrientation == DisplayOrientation.PortraitDown ? DisplayOrientation.PortraitDown : DisplayOrientation.Portrait, false);
                     break;
                 default:
@@ -152,7 +152,7 @@ namespace Microsoft.Xna.Framework
         public override void Log(string Message)
         {
 #if LOGGING
-            Android.Util.Log.Debug("MonoGameDebug", Message);
+            AndroidLog.Debug("MonoGameDebug", Message);
 #endif
         }
 
@@ -168,7 +168,7 @@ namespace Microsoft.Xna.Framework
             }
             catch (Exception ex)
             {
-                Android.Util.Log.Error("Error in swap buffers", ex.ToString());
+                AndroidLog.Error("Error in swap buffers", ex.ToString());
             }
         }
     }
