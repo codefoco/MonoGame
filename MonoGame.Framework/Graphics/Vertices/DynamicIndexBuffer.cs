@@ -20,11 +20,6 @@ namespace Microsoft.Xna.Framework.Graphics
 		{
 		}
 
-   		public DynamicIndexBuffer(GraphicsDevice graphicsDevice, Type indexType, int indexCount, BufferUsage usage) :
-            base(graphicsDevice, indexType, indexCount, usage, true)
-        {
-        }
-
         public void SetData<T>(int offsetInBytes, T[] data, int startIndex, int elementCount, SetDataOptions options) where T : struct
         {
             base.SetDataInternal<T>(offsetInBytes, data, startIndex, elementCount, options);

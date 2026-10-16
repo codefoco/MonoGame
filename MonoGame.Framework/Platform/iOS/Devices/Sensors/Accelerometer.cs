@@ -2,7 +2,10 @@ using System;
 
 using Microsoft.Xna.Framework;
 
+#if !TVOS
 using CoreMotion;
+#endif
+
 using Foundation;
 
 namespace Microsoft.Devices.Sensors
@@ -23,18 +26,19 @@ namespace Microsoft.Devices.Sensors
         /// <returns>true if an accelerometer is supported</returns>
 		public static bool IsSupported
 		{
-			get { return motionManager.AccelerometerAvailable; }
-		}
+#if TVOS
+            get { return false; }
+#else
+            get { return motionManager.AccelerometerAvailable; }
+#endif
+        }
 
-        /// <summary>
-        /// Check the current state of the accelerometer
-        /// </summary>
-        /// <returns>Returns current <see cref="SensorState">SensorState</see></returns>
 		public SensorState State
 		{
 			get { return state; }
 		}
 
+#if !TVOS
 		private static event CMAccelerometerHandler readingChanged;
 
         /// <summary>
@@ -119,6 +123,16 @@ namespace Microsoft.Devices.Sensors
 		{
 			motionManager.AccelerometerUpdateInterval = this.TimeBetweenUpdates.TotalSeconds;
 		}
-	}
+#else // !TVOS
+		public override void Start()
+        {
+        }
+
+        public override void Stop()
+        {
+        }
+
+#endif
+    }
 }
 

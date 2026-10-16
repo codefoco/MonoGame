@@ -210,13 +210,13 @@ namespace Microsoft.Xna.Framework.Graphics
             {
 				throw new ArgumentException("Must be value type", "vertexType");
 			}
-
+#pragma warning disable IL2067
             var type = Activator.CreateInstance(vertexType) as IVertexType;
 			if (type == null)
 			{
 				throw new ArgumentException("vertexData does not inherit IVertexType");
 			}
-
+#pragma warning restore IL2067
             var vertexDeclaration = type.VertexDeclaration;
 			if (vertexDeclaration == null)
 			{

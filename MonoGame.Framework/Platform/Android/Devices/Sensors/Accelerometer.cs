@@ -10,7 +10,7 @@ using Microsoft.Xna.Framework;
 namespace Microsoft.Devices.Sensors
 {
     /// <summary>
-    /// Provides Android applications access to the device’s accelerometer sensor.
+    /// Provides Android applications access to the deviceï¿½s accelerometer sensor.
     /// </summary>
     public sealed class Accelerometer : SensorBase<AccelerometerReading>
     {
@@ -180,7 +180,7 @@ namespace Microsoft.Devices.Sensors
                             accelerometer.IsDataValid = (values != null && values.Count == 3);
                             if (accelerometer.IsDataValid)
                             {
-                                const float gravity = Android.Hardware.SensorManager.GravityEarth;
+                                const float gravity = SensorManager.GravityEarth;
                                 reading.Acceleration = new Vector3(values[0], values[1], values[2]) / gravity;
                                 reading.Timestamp = DateTime.UtcNow;
                             }

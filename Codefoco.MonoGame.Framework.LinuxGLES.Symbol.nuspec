@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+  <metadata>
+    <id>Codefoco.MonoGame.Framework.LinuxGLES</id>
+    <version>3.8.131</version>
+    <title>Codefoco.MonoGame.Framework.LinuxGLES</title>
+    <authors>MonoGame Team</authors>
+    <owners>MonoGame Team</owners>
+    <licenseUrl>https://github.com/mono/MonoGame/blob/develop/LICENSE.txt#L2</licenseUrl>
+    <projectUrl>http://monogame.net/</projectUrl>
+    <iconUrl>https://pbs.twimg.com/profile_images/487954549441691649/O3KsHAsb_400x400.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>MonoGame is an open source implementation of the Microsoft XNA 4.x Framework. The goal is to make it easy for XNA developers to create cross-platform games with extremely high code reuse.
+
+This package provides you with MonoGame Framework that works on several different platforms.</description>
+    <summary>This package is a Linux OpenGL ES of MonoGame. Created by Codefoco to make it easier to work with MonoGame as a dependency</summary>
+    <copyright>Copyright © 2009-2026 The MonoGame Team</copyright>
+    <language>en-US</language>
+    <packageTypes>
+      <packageType name="SymbolsPackage" />
+    </packageTypes>
+    <repository type="git" url="https://github.com/codefoco/MonoGame" commit="30f0cc819012bd9ff4da008c93c4ba84ed3e0da5" />
+    <releaseNotes>Release: 30f0cc819</releaseNotes>
+  </metadata>
+  <files>
+    <file src="Artifacts\MonoGame.Framework\LinuxGLES\Release\net10.0\MonoGame.Framework.dll" target="lib\net10.0\MonoGame.Framework.dll" />
+    <file src="Artifacts\MonoGame.Framework\LinuxGLES\Release\net10.0\MonoGame.Framework.pdb" target="lib\net10.0\MonoGame.Framework.pdb" />
+    <file src="Artifacts\MonoGame.Framework\LinuxGLES\Release\net9.0\MonoGame.Framework.dll" target="lib\net9.0\MonoGame.Framework.dll" />
+    <file src="Artifacts\MonoGame.Framework\LinuxGLES\Release\net9.0\MonoGame.Framework.pdb" target="lib\net9.0\MonoGame.Framework.pdb" />
+    <!-- C# Assemblies -->
+    <file src="Artifacts\MonoGame.Framework\LinuxGLES\Release\net46\MonoGame.Framework.dll" target="lib\net46\MonoGame.Framework.dll" />
+    <file src="Artifacts\MonoGame.Framework\LinuxGLES\Release\net46\MonoGame.Framework.pdb" target="lib\net46\MonoGame.Framework.pdb" />
+  </files>
+</package>

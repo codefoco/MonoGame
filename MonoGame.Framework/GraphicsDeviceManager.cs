@@ -6,6 +6,10 @@ using System;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input.Touch;
 
+#if DESKTOPGL
+using MonoGame.Framework.Utilities;
+#endif
+
 namespace Microsoft.Xna.Framework
 {
     /// <summary>
@@ -36,12 +40,12 @@ namespace Microsoft.Xna.Framework
         /// <summary>
         /// The default back buffer width.
         /// </summary>
-        public static readonly int DefaultBackBufferWidth = 800;
+        public const int DefaultBackBufferWidth = 800;
 
         /// <summary>
         /// The default back buffer height.
         /// </summary>
-        public static readonly int DefaultBackBufferHeight = 480;
+        public const int DefaultBackBufferHeight = 480;
 
         /// <summary>
         /// Optional override for platform specific defaults.
@@ -85,7 +89,7 @@ namespace Microsoft.Xna.Framework
             // to reach unless changed.  So lets mimic that without the manifest bit.
             GraphicsProfile = GraphicsProfile.Reach;
 
-            // Let the plaform optionally overload construction defaults.
+            // Let the platform optionally overload construction defaults.
             PlatformConstruct();
 
             if (_game.Services.GetService(typeof(IGraphicsDeviceManager)) != null)
@@ -109,6 +113,7 @@ namespace Microsoft.Xna.Framework
             try
             {
                 var gdi = DoPreparingDeviceSettings();
+                var displayMode = gdi.Adapter.CurrentDisplayMode;
 
                 if (!_initialized)
                     Initialize(gdi);
@@ -134,7 +139,7 @@ namespace Microsoft.Xna.Framework
             _shouldApplyChanges = false;
 
             // hook up reset events
-            GraphicsDevice.DeviceReset     += (sender, args) => OnDeviceReset(args);
+            GraphicsDevice.DeviceReset += (sender, args) => OnDeviceReset(args);
             GraphicsDevice.DeviceResetting += (sender, args) => OnDeviceResetting(args);
 
             // update the touchpanel display size when the graphicsdevice is reset
@@ -288,11 +293,33 @@ namespace Microsoft.Xna.Framework
 
         partial void PlatformPreparePresentationParameters(PresentationParameters presentationParameters);
 
-        private void PreparePresentationParameters(PresentationParameters presentationParameters)
+        private void PreparePresentationParameters(PresentationParameters presentationParameters, DisplayMode displayMode)
         {
             presentationParameters.BackBufferFormat = _preferredBackBufferFormat;
+
+            // On Windows/DesktopGL we need to update BackBufferWidth/BackBufferHeight with physical units
+#if DESKTOPGL
+            if (CurrentPlatform.OS == OS.Windows)
+            {
+                float scale = _game.Window.ScreenScale;
+                presentationParameters.BackBufferWidth = (int)(_preferredBackBufferWidth * scale);
+                presentationParameters.BackBufferHeight = (int)(_preferredBackBufferHeight * scale);
+            }
+            else
+            {
+                presentationParameters.BackBufferWidth = _preferredBackBufferWidth;
+                presentationParameters.BackBufferHeight = _preferredBackBufferHeight;
+            }
+#else
             presentationParameters.BackBufferWidth = _preferredBackBufferWidth;
             presentationParameters.BackBufferHeight = _preferredBackBufferHeight;
+#endif
+            
+            if (presentationParameters.BackBufferWidth > displayMode.Width)
+                presentationParameters.BackBufferWidth = displayMode.Width;
+            if (presentationParameters.BackBufferHeight > displayMode.Height)
+                presentationParameters.BackBufferHeight = displayMode.Height;
+
             presentationParameters.DepthStencilFormat = _preferredDepthStencilFormat;
             presentationParameters.IsFullScreen = _wantFullScreen;
             presentationParameters.HardwareModeSwitch = _hardwareModeSwitch;
@@ -322,7 +349,7 @@ namespace Microsoft.Xna.Framework
             gdi.Adapter = GraphicsAdapter.DefaultAdapter;
             gdi.GraphicsProfile = GraphicsProfile;
             var pp = new PresentationParameters();
-            PreparePresentationParameters(pp);
+            PreparePresentationParameters(pp, gdi.Adapter.CurrentDisplayMode);
             gdi.PresentationParameters = pp;
         }
 
@@ -455,7 +482,7 @@ namespace Microsoft.Xna.Framework
         /// </summary>
         public bool HardwareModeSwitch
         {
-            get { return _hardwareModeSwitch;}
+            get { return _hardwareModeSwitch; }
             set
             {
                 _shouldApplyChanges = true;

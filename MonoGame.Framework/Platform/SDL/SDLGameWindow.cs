@@ -18,12 +18,10 @@ namespace Microsoft.Xna.Framework
             get { return !IsBorderless && _resizable; }
             set
             {
-                var nonResizeableVersion = new Sdl.Version() { Major = 2, Minor = 0, Patch = 4 };
-
-                if (Sdl.version > nonResizeableVersion)
+                if (Sdl.CurrentVersion > Sdl.Version.Sdl204Version)
                     Sdl.Window.SetResizable(_handle, value);
                 else
-                    throw new Exception("SDL " + nonResizeableVersion + " does not support changing resizable parameter of the window after it's already been created, please use a newer version of it.");
+                    throw new Exception("SDL " + Sdl.Version.Sdl204Version + " does not support changing resizable parameter of the window after it's already been created, please use a newer version of it.");
 
                 _resizable = value;
             }
@@ -34,7 +32,8 @@ namespace Microsoft.Xna.Framework
             get
             {
                 int x = 0, y = 0;
-                Sdl.Window.GetPosition(Handle, out x, out y);
+                if (_handle != IntPtr.Zero)
+                    Sdl.Window.GetPosition(Handle, out x, out y);
                 return new Rectangle(x, y, _width, _height);
             }
         }
@@ -45,7 +44,7 @@ namespace Microsoft.Xna.Framework
             {
                 int x = 0, y = 0;
 
-                if (!IsFullScreen)
+                if (_handle != IntPtr.Zero)
                     Sdl.Window.GetPosition(Handle, out x, out y);
 
                 return new Point(x, y);
@@ -72,6 +71,49 @@ namespace Microsoft.Xna.Framework
             get { return _screenDeviceName; }
         }
 
+        private bool GetDeviceDPIFromDrawableSize(out float dpi)
+        {
+            int widthPixels;
+            int heightPixels;
+            int widthPoints;
+            int heightPoints;
+
+            Sdl.GL.GetDrawableSize(Handle, out widthPixels, out heightPixels);
+            Sdl.Window.GetSize(Handle, out widthPoints, out heightPoints);
+
+            if (widthPoints == 0)
+            {
+                dpi = 0f;
+                return false;
+            }
+
+            dpi = (DEFAULT_DPI * widthPixels) / widthPoints;
+            return true;
+        }
+
+        public override bool GetDeviceDPI(out float dpi)
+        {
+            float ddpi;
+            float hdpi;
+            float vdpi;
+
+            // SDL_GetDeviceDPI:
+            // MacOS: We use the GetDrawableSize to figure the current scale * 96
+            // Linux: TODO check Hight-DPI support on X11
+            if (CurrentPlatform.OS == OS.MacOSX)
+                return GetDeviceDPIFromDrawableSize(out dpi);
+
+            int displayIndex = Sdl.Display.GetWindowDisplayIndex(Handle);
+            if (Sdl.Display.GetDisplayDPI(displayIndex, out ddpi, out hdpi, out vdpi) < 0)
+            {
+                dpi = 0f;
+                return false;
+            }
+
+            dpi = hdpi;
+            return true;
+        }
+
         public override bool IsBorderless
         {
             get { return _borderless; }
@@ -93,6 +135,7 @@ namespace Microsoft.Xna.Framework
         private string _screenDeviceName;
         private int _width, _height;
         private bool _wasMoved, _supressMoved;
+        internal bool _mouseVisiblePending;
 
         public SdlGameWindow(Game game)
         {
@@ -129,18 +172,27 @@ namespace Microsoft.Xna.Framework
                 }
             }
 
-            _handle = Sdl.Window.Create("", 0, 0,
-                GraphicsDeviceManager.DefaultBackBufferWidth, GraphicsDeviceManager.DefaultBackBufferHeight,
-                Sdl.Window.State.Hidden | Sdl.Window.State.FullscreenDesktop);
+#if !LINUX_GLES
+            // On Desktop we create a invisible window where the actual window will be created
+            // because some SDL APIs require display index, and to get display index we need a window handle
+            // When we create the actual game window this temp window will be destroyed
+            _handle = Sdl.Window.Create("", Sdl.Window.PosCentered, Sdl.Window.PosCentered,
+                _width,
+                _height,
+                Sdl.Window.State.Hidden |
+                Sdl.Window.State.AllowHighDPI);
+#endif
         }
 
-        internal void CreateWindow()
+        internal void CreateWindow(int width, int heigh, bool fullScreen, bool hardwareFullScreen)
         {
             var initflags =
                 Sdl.Window.State.OpenGL |
-                Sdl.Window.State.Hidden |
+                Sdl.Window.State.Shown |
                 Sdl.Window.State.InputFocus |
-                Sdl.Window.State.MouseFocus;
+                Sdl.Window.State.MouseFocus |
+                Sdl.Window.State.AllowHighDPI |
+                Sdl.Window.State.Resizable;
 
             if (_handle != IntPtr.Zero)
                 Sdl.Window.Destroy(_handle);
@@ -155,11 +207,29 @@ namespace Microsoft.Xna.Framework
                 winy |= GetMouseDisplay();
             }
 
-            _width = GraphicsDeviceManager.DefaultBackBufferWidth;
-            _height = GraphicsDeviceManager.DefaultBackBufferHeight;
+            if (width > 0)
+                _width = width;
+            else
+                _width = GraphicsDeviceManager.DefaultBackBufferWidth;
 
-            _handle = Sdl.Window.Create(
-                Title == null ? AssemblyHelper.GetDefaultWindowTitle() : Title,
+            if (heigh > 0)
+                _height = heigh;
+            else
+                _height = GraphicsDeviceManager.DefaultBackBufferHeight;
+
+            if (fullScreen)
+            {
+                if (hardwareFullScreen)
+                    initflags |= Sdl.Window.State.Fullscreen;
+                else
+                    initflags |= Sdl.Window.State.FullscreenDesktop;
+            }
+
+            string title = Title;
+            if (string.IsNullOrEmpty(title))
+                title = AssemblyHelper.GetDefaultWindowTitle();
+
+            _handle = Sdl.Window.Create(title,
                 winx, winy, _width, _height, initflags
             );
 
@@ -169,7 +239,6 @@ namespace Microsoft.Xna.Framework
                 Sdl.Window.SetIcon(_handle, _icon);
 
             Sdl.Window.SetBordered(_handle, _borderless ? 0 : 1);
-            Sdl.Window.SetResizable(_handle, _resizable);
 
             SetCursorVisible(_mouseVisible);
         }
@@ -203,8 +272,19 @@ namespace Microsoft.Xna.Framework
 
         public void SetCursorVisible(bool visible)
         {
+            if (visible == _mouseVisible)
+                return;
+
             _mouseVisible = visible;
-            Sdl.Mouse.ShowCursor(visible ? 1 : 0);
+
+            if (!visible)
+            {
+                Sdl.Mouse.ShowCursor(0);
+            }
+            else
+            {
+                _mouseVisiblePending = true;
+            }
         }
 
         public override void BeginScreenDeviceChange(bool willBeFullScreen)
@@ -217,7 +297,7 @@ namespace Microsoft.Xna.Framework
             _screenDeviceName = screenDeviceName;
 
             var prevBounds = ClientBounds;
-            var displayIndex = Sdl.Window.GetDisplayIndex(Handle);
+            var displayIndex = Sdl.Display.GetWindowDisplayIndex(Handle);
 
             Sdl.Rectangle displayRect;
             Sdl.Display.GetBounds(displayIndex, out displayRect);
@@ -236,7 +316,9 @@ namespace Microsoft.Xna.Framework
 
             if (!_willBeFullScreen || _game.graphicsDeviceManager.HardwareModeSwitch)
             {
-                Sdl.Window.SetSize(Handle, clientWidth, clientHeight);
+                if (clientWidth != _width || clientHeight != _height)
+                    Sdl.Window.SetSize(Handle, clientWidth, clientHeight);
+
                 _width = clientWidth;
                 _height = clientHeight;
             }
@@ -256,7 +338,7 @@ namespace Microsoft.Xna.Framework
             {
                 // We need to get the display information again in case
                 // the resolution of it was changed.
-                Sdl.Display.GetBounds (displayIndex, out displayRect);
+                Sdl.Display.GetBounds(displayIndex, out displayRect);
 
                 // This centering only occurs when exiting fullscreen
                 // so it should center the window on the current display.
@@ -268,7 +350,7 @@ namespace Microsoft.Xna.Framework
             // after the window gets resized, window position information
             // becomes wrong (for me it always returned 10 8). Solution is
             // to not try and set the window position because it will be wrong.
-            if ((Sdl.version > new Sdl.Version() { Major = 2, Minor = 0, Patch = 4 }  || !AllowUserResizing) && !_wasMoved)
+            if ((Sdl.CurrentVersion > Sdl.Version.Sdl205Version || !AllowUserResizing) && !_wasMoved)
                 Sdl.Window.SetPosition(Handle, centerX, centerY);
 
             if (IsFullScreen != _willBeFullScreen)
@@ -288,21 +370,43 @@ namespace Microsoft.Xna.Framework
             }
 
             _wasMoved = true;
+
+            // There is a bug on Mac where SDL resets the viewprot when the window
+            // is moved, we will trigger a client resize on move so the viewport can
+            // be recalculated
+            OnClientSizeChanged();
         }
 
         public void ClientResize(int width, int height)
         {
-            // SDL reports many resize events even if the Size didn't change.
-            // Only call the code below if it actually changed.
-            if (_game.GraphicsDevice.PresentationParameters.BackBufferWidth == width &&
-                _game.GraphicsDevice.PresentationParameters.BackBufferHeight == height) {
+            int clientWidth;
+            int clientHeight;
+
+            int currentWidth = _game.GraphicsDevice.PresentationParameters.BackBufferWidth;
+            int currentHeight = _game.GraphicsDevice.PresentationParameters.BackBufferHeight;
+
+            if (width == currentWidth && height == currentHeight)
                 return;
-            }
+
+            Sdl.GL.GetDrawableSize(Handle, out clientWidth, out clientHeight);
+
             _game.GraphicsDevice.PresentationParameters.BackBufferWidth = width;
             _game.GraphicsDevice.PresentationParameters.BackBufferHeight = height;
-            _game.GraphicsDevice.Viewport = new Viewport(0, 0, width, height);
 
-            Sdl.Window.GetSize(Handle, out _width, out _height);
+            if (CurrentPlatform.OS == OS.MacOSX)
+            {
+                _game.GraphicsDevice.Viewport = new Viewport(0, -height, clientWidth, clientHeight);
+
+                _width = width;
+                _height = height;
+            }
+            else
+            {
+                _game.GraphicsDevice.Viewport = new Viewport(0, 0, _width, _height);
+
+                _width = clientWidth;
+                _height = clientHeight;
+            }
 
             OnClientSizeChanged();
         }
