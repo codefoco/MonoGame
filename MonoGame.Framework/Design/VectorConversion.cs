@@ -17,8 +17,11 @@ namespace Microsoft.Xna.Framework.Design
                 return true;
             if (destinationType == typeof(Vector4))
                 return true;
+
+#pragma warning disable IL2070
             if (destinationType.GetInterface("IPackedVector") != null)
                 return true;
+#pragma warning restore IL2070
 
             return false;
         }
@@ -33,14 +36,18 @@ namespace Microsoft.Xna.Framework.Design
                 return new Vector3(value.X, value.Y, value.Z);
             if (destinationType == typeof(Vector4))
                 return new Vector4(value.X, value.Y, value.Z, value.W);
+#pragma warning disable IL2070
+#pragma warning disable IL2067
             if (destinationType.GetInterface("IPackedVector") != null)
             {
                 var packedVec = (IPackedVector)Activator.CreateInstance(destinationType);
                 packedVec.PackFromVector4(value);
                 return packedVec;
-            }            
+            }
+#pragma warning restore IL2067
+#pragma warning restore IL2070
 
             return null;
-        }         
+        }
     }
 }

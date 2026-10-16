@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <!-- if ShouldIncludeNative == False then don't include the native library -->
+    <PropertyGroup>
+        <MonoGamePlatform>DesktopGL</MonoGamePlatform>
+        <ShouldIncludeNative Condition=" '$(ShouldIncludeNative)' == '' ">True</ShouldIncludeNative>
+    </PropertyGroup>
+
+    <!-- get the preferred architecture -->
+    <PropertyGroup>
+        <!-- handle x86/x64/ARM/ARM64 specifically -->
+        <PreferredPlatformTarget Condition=" '$(PreferredPlatformTarget)' == '' and ( '$(PlatformTarget)' == 'x64' or '$(PlatformTarget)' == 'x86' or '$(PlatformTarget)' == 'ARM64') ">$(PlatformTarget)</PreferredPlatformTarget> 
+    </PropertyGroup>
+    <!-- get the  paths -->
+    <PropertyGroup>
+        <LinuxNativePath_OpenAL>$(MSBuildThisFileDirectory)..\..\runtimes\linux-x64\native\libopenal.so.1</LinuxNativePath_OpenAL>
+        <LinuxNativePath_libSDL>$(MSBuildThisFileDirectory)..\..\runtimes\linux-x64\native\libSDL2-2.0.so.0</LinuxNativePath_libSDL>
+        <LinuxARM64NativePath_OpenAL>$(MSBuildThisFileDirectory)..\..\runtimes\linux-arm64\native\libopenal.so.1</LinuxARM64NativePath_OpenAL>
+        <LinuxARM64NativePath_libSDL>$(MSBuildThisFileDirectory)..\..\runtimes\linux-arm64\native\libSDL2-2.0.so.0</LinuxARM64NativePath_libSDL>
+    </PropertyGroup>
+
+    <ItemGroup Condition=" '$(ShouldIncludeNative)' != 'False' and '$(PreferredPlatformTarget)' == 'x64' " >
+        <!-- Linux -->
+        <None Include="$(LinuxNativePath_OpenAL)" >
+            <Link>libopenal.so.1</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="$(LinuxNativePath_libSDL)" >
+            <Link>libSDL2-2.0.so.0</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(ShouldIncludeNative)' != 'False' and '$(PreferredPlatformTarget)' == 'ARM64' " >
+        <!-- Linux -->
+        <None Include="$(LinuxARM64NativePath_OpenAL)" >
+            <Link>libopenal.so.1</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="$(LinuxARM64NativePath_libSDL)" >
+            <Link>libSDL2-2.0.so.0</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(ShouldIncludeNative)' != 'False' and '$(PreferredPlatformTarget)' == '' " >
+        <!-- Linux -->
+        <None Include="$(LinuxNativePath_OpenAL)" >
+            <Link>x64\libopenal.so.1</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="$(LinuxNativePath_libSDL)" >
+            <Link>x64\libSDL2-2.0.so.0</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="$(LinuxARM64NativePath_OpenAL)" >
+            <Link>ARM64\libopenal.so.1</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Include="$(LinuxARM64NativePath_libSDL)" >
+            <Link>ARM64\libSDL2-2.0.so.0</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+</Project>

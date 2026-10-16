@@ -10,6 +10,9 @@ namespace Microsoft.Xna.Framework.Input
     {
         internal static int ScrollX;
         internal static int ScrollY;
+        internal static byte ClickCount;
+        internal static int X;
+        internal static int Y;
 
         private static IntPtr PlatformGetWindowHandle()
         {
@@ -23,9 +26,8 @@ namespace Microsoft.Xna.Framework.Input
         private static MouseState PlatformGetState(GameWindow window)
         {
             int x, y;
-            var winFlags = Sdl.Window.GetWindowFlags(window.Handle);
             var state = Sdl.Mouse.GetGlobalState(out x, out y);
-            var clientBounds = window.ClientBounds;
+            var clientBounds = window.Position;
 
             window.MouseState.LeftButton = (state & Sdl.Mouse.Button.Left) != 0 ? ButtonState.Pressed : ButtonState.Released;
             window.MouseState.MiddleButton = (state & Sdl.Mouse.Button.Middle) != 0 ? ButtonState.Pressed : ButtonState.Released;
@@ -36,8 +38,10 @@ namespace Microsoft.Xna.Framework.Input
             window.MouseState.HorizontalScrollWheelValue = ScrollX;
             window.MouseState.ScrollWheelValue = ScrollY;
 
-            window.MouseState.X = x - clientBounds.X;
-            window.MouseState.Y = y - clientBounds.Y;
+            window.MouseState.ClickCount = ClickCount;
+
+            window.MouseState.X = X;
+            window.MouseState.Y = Y;
 
             return window.MouseState;
         }

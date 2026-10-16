@@ -48,7 +48,11 @@ namespace Microsoft.Xna.Framework.Graphics
 #else
             Threading.BlockOnUIThread(() =>
             {
+#if NET_4_0
+                var elementSizeInByte = Marshal.SizeOf(typeof(T));
+#else
                 var elementSizeInByte = Marshal.SizeOf<T>();
+#endif
                 var dataHandle = GCHandle.Alloc(data, GCHandleType.Pinned);
                 try
                 {
@@ -86,7 +90,11 @@ namespace Microsoft.Xna.Framework.Graphics
                 // If we're getting a subset of the texture, we need to read the entire level and copy the relevant portion
                 if (left != 0 || top != 0 || front != 0 || width != Width || height != Height || depth != Depth)
                 {
+#if NET_4_0
+                    var elementSizeInByte = Marshal.SizeOf(typeof(T));
+#else
                     var elementSizeInByte = Marshal.SizeOf<T>();
+#endif
                     var levelWidth = Math.Max(Width >> level, 1);
                     var levelHeight = Math.Max(Height >> level, 1);
                     var levelDepth = Math.Max(Depth >> level, 1);

@@ -3,6 +3,7 @@
 // file 'LICENSE.txt', which is part of this source code package.
 
 using Microsoft.Xna.Framework.Graphics;
+using MonoGame.Framework.Utilities;
 
 namespace Microsoft.Xna.Framework
 {
@@ -13,6 +14,15 @@ namespace Microsoft.Xna.Framework
             var backBufferFormat = _game.graphicsDeviceManager.PreferredBackBufferFormat;
             var surfaceFormat = backBufferFormat.GetColorFormat();
             var depthStencilFormat = _game.graphicsDeviceManager.PreferredDepthStencilFormat;
+
+#if LINUX_GLES
+            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextProfileMask, (int)Sdl.GL.Profile.ES);
+            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMajorVersion, 2);
+            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMinorVersion, 0);
+#else // LINUX_GLES
+            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMajorVersion, 2);
+            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMinorVersion, 1);
+#endif
 
             // TODO Need to get this data from the Presentation Parameters
             Sdl.GL.SetAttribute(Sdl.GL.Attribute.RedSize, surfaceFormat.R);
@@ -46,8 +56,6 @@ namespace Microsoft.Xna.Framework
             }
 
             Sdl.GL.SetAttribute(Sdl.GL.Attribute.DoubleBuffer, 1);
-            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMajorVersion, 2);
-            Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextMinorVersion, 1);
 
             if (presentationParameters.MultiSampleCount > 0)
             {
@@ -55,7 +63,16 @@ namespace Microsoft.Xna.Framework
                 Sdl.GL.SetAttribute(Sdl.GL.Attribute.MultiSampleSamples, presentationParameters.MultiSampleCount);
             }
 
-            ((SdlGameWindow)SdlGameWindow.Instance).CreateWindow();
+            int clientWidth = presentationParameters.BackBufferWidth;
+            int clientHeight = presentationParameters.BackBufferHeight;
+
+            bool fullScreen = presentationParameters.IsFullScreen;
+            bool hardwareFullScreen = presentationParameters.HardwareModeSwitch;
+
+            SdlGameWindow window = (SdlGameWindow)SdlGameWindow.Instance;
+            window.CreateWindow(clientWidth, clientHeight, fullScreen, hardwareFullScreen);
+
+            presentationParameters.DeviceWindowHandle = window.Handle;
         }
     }
 }

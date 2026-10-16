@@ -5,11 +5,14 @@
 using System;
 using System.IO;
 
+using Uri = Android.Net.Uri;
+using AndroidMediaPlayer = Android.Media.MediaPlayer;
+
 namespace Microsoft.Xna.Framework.Media
 {
     public sealed partial class Song : IEquatable<Song>, IDisposable
     {
-        static Android.Media.MediaPlayer _androidPlayer;
+        static AndroidMediaPlayer _androidPlayer;
         static Song _playingSong;
 
         private Album album;
@@ -18,21 +21,20 @@ namespace Microsoft.Xna.Framework.Media
         private string name;
         private TimeSpan duration;
         private TimeSpan position;
-        private Android.Net.Uri assetUri;
+        private Uri assetUri;
 
-        [CLSCompliant(false)]
-        public Android.Net.Uri AssetUri
+        public Uri AssetUri
         {
             get { return this.assetUri; }
         }
 
         static Song()
         {
-            _androidPlayer = new Android.Media.MediaPlayer();
+            _androidPlayer = new AndroidMediaPlayer();
             _androidPlayer.Completion += AndroidPlayer_Completion;
         }
 
-        internal Song(Album album, Artist artist, Genre genre, string name, TimeSpan duration, Android.Net.Uri assetUri)
+        internal Song(Album album, Artist artist, Genre genre, string name, TimeSpan duration, Uri assetUri)
         {
             this.album = album;
             this.artist = artist;

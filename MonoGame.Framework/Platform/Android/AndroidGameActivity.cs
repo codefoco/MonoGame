@@ -7,10 +7,10 @@ using Android.App;
 using Android.Content;
 using Android.OS;
 using Android.Views;
+using AndroidConfiguration = Android.Content.Res.Configuration;
 
 namespace Microsoft.Xna.Framework
 {
-	[CLSCompliant(false)]
     public class AndroidGameActivity : Activity
     {
         internal Game Game { private get; set; }
@@ -48,7 +48,7 @@ namespace Microsoft.Xna.Framework
 
         public static event EventHandler Paused;
 
-		public override void OnConfigurationChanged (Android.Content.Res.Configuration newConfig)
+		public override void OnConfigurationChanged (AndroidConfiguration newConfig)
 		{
 			// we need to refresh the viewport here.
 			base.OnConfigurationChanged (newConfig);
@@ -93,7 +93,6 @@ namespace Microsoft.Xna.Framework
 		}
     }
 
-	[CLSCompliant(false)]
 	public static class ActivityExtensions
     {
         public static ActivityAttribute GetActivityAttribute(this AndroidGameActivity obj)

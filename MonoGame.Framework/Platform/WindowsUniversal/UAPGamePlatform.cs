@@ -46,7 +46,7 @@ namespace Microsoft.Xna.Framework
             int pos = 0;
             int paramStart = 0;
             bool inQuotes = false;
-            var keySeperators = new char[] { ':', '=' };
+            var keySeparators = new char[] { ':', '=' };
 
             while (pos <= LaunchParameters.Length)
             {
@@ -80,7 +80,7 @@ namespace Microsoft.Xna.Framework
 
                 if (arg.Length > keyStart)
                 {
-                    int keyEnd = arg.IndexOfAny(keySeperators, keyStart);
+                    int keyEnd = arg.IndexOfAny(keySeparators, keyStart);
 
                     if (keyEnd >= 0)
                     {
@@ -201,7 +201,7 @@ namespace Microsoft.Xna.Framework
 
         protected override void OnIsMouseVisibleChanged() 
         {
-			UAPGameWindow.Instance.SetCursor(Game.IsMouseVisible);
+			UAPGameWindow.Instance.UpdateCursor();
         }
 		
         protected override void Dispose(bool disposing)
