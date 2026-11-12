@@ -2,6 +2,7 @@
 using Android.App;
 using Android.Content;
 using Android.Widget;
+using Android.Text;
 
 namespace Microsoft.Xna.Framework.Input
 {
@@ -27,7 +28,7 @@ namespace Microsoft.Xna.Framework.Input
                     input.SetSelection(defaultText.Length);
 
                 if (usePasswordMode)
-                    input.InputType = Android.Text.InputTypes.ClassText | Android.Text.InputTypes.TextVariationPassword;
+                    input.InputType = InputTypes.ClassText | InputTypes.TextVariationPassword;
 
                 alert.SetView(input);
 

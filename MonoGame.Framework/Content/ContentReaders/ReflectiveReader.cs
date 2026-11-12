@@ -9,8 +9,20 @@ using System.Linq;
 using System.Reflection;
 using MonoGame.Framework.Utilities;
 
+#pragma warning disable IL2113
+#pragma warning disable IL2115
+
+
 namespace Microsoft.Xna.Framework.Content
 {
+    /// <summary>
+    /// This type is not meant to be used directly by MonoGame users.
+    /// Its purpose is to allow to work-around AOT issues when loading assets with the ContentManager fail due to the absence of runtime-reflection support in that context (i.e. missing types due to trimming and inability to statically discover them at compile-time).
+    /// If ContentManager.Load() throws an NotSupportedExeception, the message should provide insights on how to fix it.
+    /// </summary>
+#if NET
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+#endif
     internal class ReflectiveReader<T> : ContentTypeReader
     {
         delegate void ReadElement(ContentReader input, object parent);
@@ -22,7 +34,7 @@ namespace Microsoft.Xna.Framework.Content
         private ContentTypeReader _baseTypeReader;
 
         /// <summary/>
-        public ReflectiveReader() 
+        public ReflectiveReader()
             : base(typeof(T))
         {
         }
@@ -58,7 +70,7 @@ namespace Microsoft.Xna.Framework.Content
                 if (read != null)
                     _readers.Add(read);
             }
-            
+
             // Gather the fields.
             foreach (var field in fields)
             {
@@ -86,7 +98,7 @@ namespace Microsoft.Xna.Framework.Content
             }
 
             // Are we explicitly asked to ignore this item?
-            if (ReflectionHelpers.GetCustomAttribute<ContentSerializerIgnoreAttribute>(member) != null) 
+            if (ReflectionHelpers.GetCustomAttribute<ContentSerializerIgnoreAttribute>(member) != null)
                 return null;
 
             var contentSerializerAttribute = ReflectionHelpers.GetCustomAttribute<ContentSerializerAttribute>(member);
@@ -156,7 +168,7 @@ namespace Microsoft.Xna.Framework.Content
                 else
                     throw new ContentLoadException(string.Format("Content reader could not be found for {0} type.", elementType.FullName));
 
-            // We use the construct delegate to pick the correct existing 
+            // We use the construct delegate to pick the correct existing
             // object to be the target of deserialization.
             Func<object, object> construct = parent => null;
             if (property != null && !property.CanWrite)
@@ -175,10 +187,15 @@ namespace Microsoft.Xna.Framework.Content
         {
             T obj;
             if (existingInstance != null)
+            {
                 obj = (T)existingInstance;
+            }
             else
+            {
+#pragma warning disable IL2087
                 obj = (_constructor == null ? (T)Activator.CreateInstance(typeof(T)) : (T)_constructor.Invoke(null));
-		
+#pragma warning restore IL2087
+            }
 			if(_baseTypeReader != null)
 				_baseTypeReader.Read(input, obj);
 
@@ -195,3 +212,6 @@ namespace Microsoft.Xna.Framework.Content
         }
     }
 }
+
+#pragma warning restore IL2113
+#pragma warning restore IL2115

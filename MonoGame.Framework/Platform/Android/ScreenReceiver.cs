@@ -1,7 +1,8 @@
-using System;
 using Android.Content;
 using Microsoft.Xna.Framework.Media;
 using Android.App;
+using Android.Util;
+using MonoGame.Framework.Utilities;
 
 namespace Microsoft.Xna.Framework
 {
@@ -11,26 +12,28 @@ namespace Microsoft.Xna.Framework
 		
 		public override void OnReceive(Context context, Intent intent)
 		{
-			Android.Util.Log.Info("MonoGame", intent.Action.ToString());
+			Log.Info("MonoGame", intent.Action.ToString());
 			if(intent.Action == Intent.ActionScreenOff)
 			{
                 OnLocked();
 			}
 			else if(intent.Action == Intent.ActionScreenOn)
 			{
+#pragma warning disable CS0618 // Type or member is obsolete
                 // If the user turns the screen on just after it has automatically turned off, 
                 // the keyguard will not have had time to activate and the ActionUserPreset intent
                 // will not be broadcast. We need to check if the lock is currently active
                 // and if not re-enable the game related functions.
                 // http://stackoverflow.com/questions/4260794/how-to-tell-if-device-is-sleeping
                 KeyguardManager keyguard = (KeyguardManager)context.GetSystemService(Context.KeyguardService);
-                if (!OperatingSystem.IsAndroidVersionAtLeast (28)) {
+                if (!PlatformInfo.IsAndroidVersionAtLeast (28)) {
                     if (!keyguard.InKeyguardRestrictedInputMode())
                         OnUnlocked();
                 } else {
                     if (!keyguard.IsDeviceLocked)
                         OnUnlocked();
                 }
+#pragma warning restore CS0618 // Type or member is obsolete
 			}
 			else if(intent.Action == Intent.ActionUserPresent)
 			{

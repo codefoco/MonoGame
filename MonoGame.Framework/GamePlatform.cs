@@ -7,6 +7,9 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Input.Touch;
 
+#if WINDOWS && DIRECTX
+using System.Windows.Forms;
+#endif
 
 namespace Microsoft.Xna.Framework
 {
@@ -86,8 +89,6 @@ namespace Microsoft.Xna.Framework
         public GameWindow Window
         {
             get { return _window; }
-
-
             protected set
             {
                 if (_window == null)
@@ -155,6 +156,14 @@ namespace Microsoft.Xna.Framework
         /// </summary>
         public abstract void RunLoop();
 
+#if WINDOWS && DIRECTX
+        /// <summary>
+        /// When implemented in a derived, starts the run loop and blocks
+        /// until it has ended.
+        /// </summary>
+        public abstract void RunLoop(Form applicationForm);
+        public abstract void WndProc(ref Message m);
+#endif
         /// <summary>
         /// When implemented in a derived, starts the run loop and returns
         /// immediately.

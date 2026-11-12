@@ -45,6 +45,7 @@ namespace MonoGame.OpenGL
             // create debug context, so we get better error messages (glDebugMessageCallback)
             Sdl.GL.SetAttribute(Sdl.GL.Attribute.ContextFlags, 1); // 1 = SDL_GL_CONTEXT_DEBUG_FLAG
 #endif
+
             _context = Sdl.GL.CreateContext(_winHandle);
 
             // GL entry points must be loaded after the GL context creation, otherwise some Windows drivers will return only GL 1.3 compatible functions

@@ -437,7 +437,10 @@ namespace Microsoft.Xna.Framework.Content
 			object result = null;
 
             // Try to load as XNB file
-            var stream = OpenStream(assetName);
+            Stream stream = OpenStream(assetName);
+            if (stream == null)
+                throw new ContentLoadException("Could not load " + originalAssetName + " asset!");
+
             using (var xnbReader = new BinaryReader(stream))
             {
                 using (var reader = GetContentReaderFromXnb(assetName, stream, xnbReader, recordDisposableObject))
@@ -484,18 +487,7 @@ namespace Microsoft.Xna.Framework.Content
             Stream decompressedStream = null;
             if (compressedLzx || compressedLz4)
             {
-                // Decompress the xnb
-                int decompressedSize = xnbReader.ReadInt32();
-
-                if (compressedLzx)
-                {
-                    int compressedSize = xnbLength - 14;
-                    decompressedStream = new LzxDecoderStream(stream, decompressedSize, compressedSize);
-                }
-                else if (compressedLz4)
-                {
-                    decompressedStream = new Lz4DecoderStream(stream);
-                }
+                throw new NotSupportedException("Compressed XNB is not supported by this version of MonoGame");
             }
             else
             {
@@ -534,12 +526,14 @@ namespace Microsoft.Xna.Framework.Content
                 if (asset.Key == null)
                     ReloadAsset(asset.Key, Convert.ChangeType(asset.Value, asset.Value.GetType()));
 
+#pragma warning disable IL3050
+#pragma warning disable IL2060
                 var methodInfo = ReflectionHelpers.GetMethodInfo(typeof(ContentManager), "ReloadAsset");
-                // Up the callstack, it is ensured that the type of asset.Value can be used to make a generic method for.
-                #pragma warning disable IL2060, IL3050
                 var genericMethod = methodInfo.MakeGenericMethod(asset.Value.GetType());
-                #pragma warning restore IL2060, IL3050
-                genericMethod.Invoke(this, new object[] { asset.Key, Convert.ChangeType(asset.Value, asset.Value.GetType()) });
+#pragma warning restore IL2060
+#pragma warning restore IL3050
+                if (genericMethod != null)
+                    genericMethod.Invoke(this, new object[] { asset.Key, Convert.ChangeType(asset.Value, asset.Value.GetType()) });
             }
         }
 

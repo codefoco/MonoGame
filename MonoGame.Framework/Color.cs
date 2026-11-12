@@ -12,7 +12,7 @@ namespace Microsoft.Xna.Framework
     /// <summary>
     /// Describes a 32-bit packed color.
     /// </summary>
-    [DataContract]
+    //[DataContract]
     [DebuggerDisplay("{DebugDisplayString,nq}")]
     public struct Color : IEquatable<Color>
     {
@@ -314,7 +314,7 @@ namespace Microsoft.Xna.Framework
         /// <summary>
         /// Gets or sets the blue component.
         /// </summary>
-        [DataMember]
+        //[DataMember]
         public byte B
         {
             get
@@ -333,7 +333,7 @@ namespace Microsoft.Xna.Framework
         /// <summary>
         /// Gets or sets the green component.
         /// </summary>
-        [DataMember]
+        //[DataMember]
         public byte G
         {
             get
@@ -352,7 +352,7 @@ namespace Microsoft.Xna.Framework
         /// <summary>
         /// Gets or sets the red component.
         /// </summary>
-        [DataMember]
+        //[DataMember]
         public byte R
         {
             get
@@ -371,7 +371,7 @@ namespace Microsoft.Xna.Framework
         /// <summary>
         /// Gets or sets the alpha component.
         /// </summary>
-        [DataMember]
+        //[DataMember]
         public byte A
         {
             get
@@ -1746,10 +1746,10 @@ namespace Microsoft.Xna.Framework
         /// <param name="scale">The value to multiply the RGBA component values by.</param>
         /// <returns>The new color value created as a result of the multiplication.</returns>
         public static Color Multiply(Color value, float scale)
-	    {
-	        return new Color((int)(value.R * scale), (int)(value.G * scale), (int)(value.B * scale), (int)(value.A * scale));
-	    }
-	
+        {
+            return new Color((int)(value.R * scale), (int)(value.G * scale), (int)(value.B * scale), (int)(value.A * scale));
+        }
+
         /// <summary>
         /// Multiplies the Alpha component value of a color by the specified value.
         /// </summary>
@@ -1784,7 +1784,6 @@ namespace Microsoft.Xna.Framework
         }
 
         /// <summary>
-
         /// Multiplies two colors compenent-wise.
         /// </summary>
         /// <param name="color1">The first color to be multiplied.</param>
@@ -1956,10 +1955,12 @@ namespace Microsoft.Xna.Framework
         }
 
         /// <summary>
-        /// Calculates Hue & Saturation value from RGB, to avoid code duplication.
+        /// Calculates Hue &amp; Saturation value from RGB, to avoid code duplication.
         /// </summary>
-        /// <param name="h">Hue component value from 0.0f to 360.0f</param>
-        /// <param name="s">Saturation component</param>
+        /// <param name="h"></param>
+        /// <param name="s"></param>
+        /// <param name="max"></param>
+        /// <param name="min"></param>
         private void ToHS(out float h, out float s, out double max, out double min)
         {
             double r = R / 255f;
@@ -1984,10 +1985,10 @@ namespace Microsoft.Xna.Framework
             if (h < 0.0f)
                 h += 360.0f;
             // calculating saturation
-                s = 0.0f;
+            s = 0.0f;
             if (max != 0.0)
                 s = (float)((delta / max) * 100.0);
-            
+
         }
         /// <summary>
         /// Converts <see cref="Color"/> into HSL components.
@@ -2017,7 +2018,7 @@ namespace Microsoft.Xna.Framework
 
             // value
             v = (float)(max * 100.0);
-        } 
+        }
 
         /// <summary>
         /// Converts the Hue value to either an R, G or B value
@@ -2037,7 +2038,7 @@ namespace Microsoft.Xna.Framework
             else
                 return c;
         }
-        
+
         /// <summary>
         /// Creates a <see cref="Color"/> from HSL values
         /// </summary>
@@ -2076,7 +2077,7 @@ namespace Microsoft.Xna.Framework
             return new Color(r, g, b);
 
         }
-        
+
         /// <summary>
         /// Creates a <see cref="Color"/> from HSV values. 
         /// </summary>
@@ -2136,7 +2137,7 @@ namespace Microsoft.Xna.Framework
                     g = p;
                     b = q;
                     break;
-                     
+
 
             }
 
